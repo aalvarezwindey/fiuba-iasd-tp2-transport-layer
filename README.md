@@ -10,18 +10,18 @@ A continuación se listan algunos ejemplos para correr los comandos utilizando l
 
 ### Iniciando el servidor
 
-    ./start-server --protocol tcp -H 127.0.0.1 -P 8080 --storage-dir ./storage
-    ./start-server --protocol udp -H 127.0.0.1 -P 8080 --storage-dir ./storage
+    ./start-server --protocol tcp -H 127.0.0.1 -P 8080 --storage-dir /tmp/storage
+    ./start-server --protocol udp -H 127.0.0.1 -P 8080 --storage-dir /tmp/storage
 
 ### Subiendo un archivo
 
-    ./upload-file --protocol tcp -H 127.0.0.1 -P 8080 --src ./files/test.txt --name first-upload.txt
-    ./upload-file --protocol udp -H 127.0.0.1 -P 8080 --src ./files/test.txt --name first-upload.txt
+    ./upload-file --protocol tcp -H 127.0.0.1 -P 8080 --src /tmp/files/test.txt --name first-upload.txt
+    ./upload-file --protocol udp -H 127.0.0.1 -P 8080 --src /tmp/files/test.txt --name first-upload.txt
 
 ### Descargando un archivo
 
-    ./download-file --protocol tcp -H 127.0.0.1 -P 8080 --name first-upload.txt --dst ./output/first-file.txt
-    ./download-file --protocol udp -H 127.0.0.1 -P 8080 --name first-upload.txt --dst ./output/first-file.txt
+    ./download-file --protocol tcp -H 127.0.0.1 -P 8080 --name first-upload.txt --dst /tmp/output/first-file.txt
+    ./download-file --protocol udp -H 127.0.0.1 -P 8080 --name first-upload.txt --dst /tmp/output/first-file.txt
 
 ## Simulando la red
 
