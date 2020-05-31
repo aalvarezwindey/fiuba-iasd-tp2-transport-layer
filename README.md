@@ -34,3 +34,12 @@ En nuestro caso, vamos a simular una tasa de perdida de paquetes del 10% para po
 Una vez que terminamos con la simulación, debemos correr el siguiente comando para desactivar las reglas setteadas:
 
     comcast --stop
+
+
+#### Links de utilidad
+
+Repo del ejemplo: https://github.com/7543distrofiuba/sockets-examples
+
+Documentación de sockets en python: https://docs.python.org/3/library/socket.html
+
+Guía de programación de sockets: https://realpython.com/python-sockets/
