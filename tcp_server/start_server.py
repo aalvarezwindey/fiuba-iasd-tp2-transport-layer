@@ -1,4 +1,26 @@
+import socket
+
 def start_server(server_address, storage_dir):
-  # TODO: Implementar TCP server
   print('TCP: start_server({}, {})'.format(server_address, storage_dir))
-  pass
+
+
+  # Creation
+  print('Attempting to create socket server on {}'.format(server_address))
+  try:
+    MAX_NOT_ACCEPTED_CONNECTIONS_QUEUED = 1
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.bind((server_address))
+    sock.listen(MAX_NOT_ACCEPTED_CONNECTIONS_QUEUED)
+  except Exception as e:
+    print('ERROR: could not create socket server')
+    print('{}'.format(e))
+  
+
+  # Destruction
+  print('Attempting to close socket server {}'.format(server_address))
+  try:
+    sock.close()
+  except Exception as e:
+    print('ERROR: could not destroy socket server')
+    print('{}'.format(e))
+  
