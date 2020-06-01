@@ -2,6 +2,12 @@ import socket
 import signal
 import sys
 
+UPLOAD = 'UPLOAD'
+UPLOAD_CMD = '1'
+COMMANDS = {
+  UPLOAD: UPLOAD_CMD
+}
+
 def destroy_socket(sock, server_address):
   print('Attempting to close socket server {}'.format(server_address))
   try:
@@ -10,6 +16,29 @@ def destroy_socket(sock, server_address):
     print('ERROR: could not destroy socket server')
     print('{}'.format(e))
   print('Server socket destroyed {}'.format(sock))
+
+# send and recv implementation: https://docs.python.org/3/howto/sockets.html#socket-howto
+# Sends 'buffer' of size 'size' into the socket. Raises error on connection broken
+def my_send(sock, buffer, size):
+  total_sent = 0
+  while total_sent < size:
+    sent = sock.send(buffer[total_sent:])
+    if sent == 0:
+      raise RuntimeError("[my_send] socket connection broken")
+    total_sent = total_sent + sent
+
+# returns a buffer of size 'size' bytes readed from the socket
+def my_receive(sock, size):
+  chunks = []
+  MAX_CHUNK_SIZE = 2048
+  bytes_recd = 0
+  while bytes_recd < size:
+    chunk = sock.recv(min(size - bytes_recd, MAX_CHUNK_SIZE))
+    if chunk == b'':
+      raise RuntimeError("[my_receive] socket connection broken")
+    chunks.append(chunk)
+    bytes_recd = bytes_recd + len(chunk)
+  return b''.join(chunks)
 
 def start_server(server_address, storage_dir):
   print('TCP: start_server({}, {})'.format(server_address, storage_dir))  
@@ -42,6 +71,11 @@ def start_server(server_address, storage_dir):
       destroy_socket(sock, server_address)
       break
 
-    print('New connection received {} & {}'.format(conn, addr))
+    print('New connection received {}'.format(addr))
+    command = my_receive(conn, len(COMMANDS[UPLOAD])).decode()
+
+    print('Received command {}'.format(command))
+
+
 
     
