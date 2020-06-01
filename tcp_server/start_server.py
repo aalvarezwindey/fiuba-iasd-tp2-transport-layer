@@ -13,6 +13,13 @@ def handle_upload(conn):
   file_name = receive_until_separator(conn)
   print('File name received "{}"'.format(file_name))
 
+  # 2. Receive the file size
+  file_size_str = receive_until_separator(conn)
+  print('File size to receive {}'.format(file_size_str))
+
+  # 3. Receive the file
+  receive_file_from_socket(conn, int(file_size_str), file_name)
+
 def handle_download(conn):
   print('Handling download command')
 
@@ -56,6 +63,19 @@ def my_receive(sock, size):
     chunks.append(chunk)
     bytes_recd = bytes_recd + len(chunk)
   return b''.join(chunks)
+
+def receive_file_from_socket(conn, file_size, file_name):
+  # TODO: use storage dir configured for server
+  filename = "./{}".format(file_name)
+  new_file = open(filename, "wb")
+  bytes_received = 0
+
+  print('File created attemping to receive it')
+  while bytes_received < file_size:
+    # TODO: implement receiving the file in chunks and not load it all in memory
+    data = my_receive(conn, file_size)
+    bytes_received += len(data)
+    new_file.write(data)
 
 # returns a string of received data until the specified separator is found
 # Pos: the separator is discarded from the string

@@ -1,4 +1,5 @@
 import socket
+import os
 
 UPLOAD_CMD = '1'
 
@@ -36,8 +37,30 @@ def send_with_separator(sock, data, separator = '|'):
   my_send(sock, data, len(data))
   my_send(sock, separator.encode(), len(separator.encode()))
 
+def send_file_over_a_socket(sock, a_file, file_size):
+  read = 0
+  CHUNK_SIZE = 1024
+  while read < file_size:
+    chunk = a_file.read(CHUNK_SIZE)
+    if not chunk:
+      break
+    read += len(chunk)
+    my_send(sock, chunk, len(chunk))
+
 def upload_file(server_address, src, name):
   print('TCP: upload_file({}, {}, {})'.format(server_address, src, name))
+
+  print('Attempting to open file {}'.format(src))
+  try:
+    the_file = open(src, "rb")
+    the_file.seek(0, os.SEEK_END)
+    file_size = the_file.tell()
+    the_file.seek(0, os.SEEK_SET)
+  except Exception as e:
+    print('ERROR: could not open file at {}'.format(src))
+    print('{}'.format(e))
+    return
+  print('File opened successfully')
 
   # Creation / Connection
   print('Attempting to connect to server socket server on {}'.format(server_address))
@@ -47,17 +70,27 @@ def upload_file(server_address, src, name):
   except Exception as e:
     print('ERROR: could not connect to server at {}'.format(server_address))
     print('{}'.format(e))
+    return
   print('Client connected successfully {}'.format(sock))
 
   # 0. Send command
   cmd_buffer = UPLOAD_CMD.encode()
   my_send(sock, cmd_buffer, len(cmd_buffer))
 
-  file_name_buffer = name.encode()
-
   # 1. Send file name
+  file_name_buffer = name.encode()
   print('Sending file name "{}"'.format(name))
   send_with_separator(sock, file_name_buffer)
+
+  # 2. Send file size
+  print('Sending file size of {} bytes'.format(file_size))
+  send_with_separator(sock, str(file_size).encode())
+
+  # 3. Sending the file
+  print('Sending the file')
+  send_file_over_a_socket(sock, the_file, file_size)
+  print('Finish sending the file')
+
 
 
 
