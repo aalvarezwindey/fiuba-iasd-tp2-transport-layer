@@ -1,8 +1,18 @@
 import socket
+import signal
+import sys
+
+def destroy_socket(sock, server_address):
+  print('Attempting to close socket server {}'.format(server_address))
+  try:
+    sock.close()
+  except Exception as e:
+    print('ERROR: could not destroy socket server')
+    print('{}'.format(e))
+  print('Server socket destroyed {}'.format(sock))
 
 def start_server(server_address, storage_dir):
-  print('TCP: start_server({}, {})'.format(server_address, storage_dir))
-
+  print('TCP: start_server({}, {})'.format(server_address, storage_dir))  
 
   # Creation
   print('Attempting to create socket server on {}'.format(server_address))
@@ -14,13 +24,19 @@ def start_server(server_address, storage_dir):
   except Exception as e:
     print('ERROR: could not create socket server')
     print('{}'.format(e))
-  
+  print('Socket server created {}'.format(sock))
 
-  # Destruction
-  print('Attempting to close socket server {}'.format(server_address))
-  try:
-    sock.close()
-  except Exception as e:
-    print('ERROR: could not destroy socket server')
-    print('{}'.format(e))
+  def signal_handler(sig, frame):
+    # Destruction
+    destroy_socket(sock, server_address)
+    sys.exit(0)
+
+  # Register handler for SIGINT (Ctrl + C)
+  signal.signal(signal.SIGINT, signal_handler)
+
+  while True:
+    conn, addr = sock.accept()
+
+  
+  
   
