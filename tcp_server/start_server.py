@@ -2,11 +2,24 @@ import socket
 import signal
 import sys
 
-UPLOAD = 'UPLOAD'
+COMMAND_LEN = 1
 UPLOAD_CMD = '1'
-COMMANDS = {
-  UPLOAD: UPLOAD_CMD
+DOWNLOAD_CMD = '2'
+
+def handle_upload():
+  print('Handling upload command')
+
+def handle_download():
+  print('Handling download command')
+
+def handle_default(command):
+  print('Unknown command {}. Just ignoring it'.format(command))
+
+COMMAND_HANDLERS = {
+  UPLOAD_CMD: handle_upload,
+  DOWNLOAD_CMD: handle_download
 }
+
 
 def destroy_socket(sock, server_address):
   print('Attempting to close socket server {}'.format(server_address))
@@ -72,10 +85,16 @@ def start_server(server_address, storage_dir):
       break
 
     print('New connection received {}'.format(addr))
-    command = my_receive(conn, len(COMMANDS[UPLOAD])).decode()
+    command = my_receive(conn, COMMAND_LEN).decode()
 
     print('Received command {}'.format(command))
 
+    handler = COMMAND_HANDLERS.get(command)
 
+    if handler == None:
+      handle_default(command)
+      continue
+    
+    handler()
 
     
