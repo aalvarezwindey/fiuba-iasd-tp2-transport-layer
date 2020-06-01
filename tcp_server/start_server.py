@@ -6,10 +6,14 @@ COMMAND_LEN = 1
 UPLOAD_CMD = '1'
 DOWNLOAD_CMD = '2'
 
-def handle_upload():
+def handle_upload(conn):
   print('Handling upload command')
 
-def handle_download():
+  # 1. Receive file name
+  file_name = receive_until_separator(conn)
+  print('File name received "{}"'.format(file_name))
+
+def handle_download(conn):
   print('Handling download command')
 
 def handle_default(command):
@@ -53,6 +57,27 @@ def my_receive(sock, size):
     bytes_recd = bytes_recd + len(chunk)
   return b''.join(chunks)
 
+# returns a string of received data until the specified separator is found
+# Pos: the separator is discarded from the string
+def receive_until_separator(sock, separator = '|'):
+  buffer = ''
+  A_BYTE = 1
+
+  while True:
+    byte = sock.recv(A_BYTE)
+
+    if byte == b'':
+      raise RuntimeError("[receive_until_separator] socket connection broken")
+
+    char = byte.decode()
+
+    if char != separator:
+      buffer += char
+    else:
+      break
+
+  return buffer
+
 def start_server(server_address, storage_dir):
   print('TCP: start_server({}, {})'.format(server_address, storage_dir))  
 
@@ -95,6 +120,6 @@ def start_server(server_address, storage_dir):
       handle_default(command)
       continue
     
-    handler()
+    handler(conn)
 
     

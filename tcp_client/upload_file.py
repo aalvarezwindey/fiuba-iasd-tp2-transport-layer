@@ -32,6 +32,10 @@ def my_receive(sock, size):
     bytes_recd = bytes_recd + len(chunk)
   return b''.join(chunks)
 
+def send_with_separator(sock, data, separator = '|'):
+  my_send(sock, data, len(data))
+  my_send(sock, separator.encode(), len(separator.encode()))
+
 def upload_file(server_address, src, name):
   print('TCP: upload_file({}, {}, {})'.format(server_address, src, name))
 
@@ -45,8 +49,17 @@ def upload_file(server_address, src, name):
     print('{}'.format(e))
   print('Client connected successfully {}'.format(sock))
 
+  # 0. Send command
   cmd_buffer = UPLOAD_CMD.encode()
   my_send(sock, cmd_buffer, len(cmd_buffer))
+
+  file_name_buffer = name.encode()
+
+  # 1. Send file name
+  print('Sending file name "{}"'.format(name))
+  send_with_separator(sock, file_name_buffer)
+
+
 
   # Destruction
   destroy_socket(sock, server_address)
