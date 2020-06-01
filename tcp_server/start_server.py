@@ -35,8 +35,13 @@ def start_server(server_address, storage_dir):
   signal.signal(signal.SIGINT, signal_handler)
 
   while True:
+    print('Waiting a new connection')
     conn, addr = sock.accept()
 
-  
-  
-  
+    if not conn:
+      destroy_socket(sock, server_address)
+      break
+
+    print('New connection received {} & {}'.format(conn, addr))
+
+    
