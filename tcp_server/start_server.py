@@ -1,4 +1,6 @@
-import socket
+from utils.tcp_server_listener import TCPServerListener
+from utils.tcp_server_connection import TCPServerConnection
+
 import signal
 import sys
 
@@ -6,22 +8,24 @@ COMMAND_LEN = 1
 UPLOAD_CMD = '1'
 DOWNLOAD_CMD = '2'
 
-def handle_upload(conn):
+def handle_upload(tcp_server_connection):
   print('Handling upload command')
 
   # 1. Receive file name
-  file_name = receive_until_separator(conn)
+  file_name = tcp_server_connection.receive_until_separator()
   print('File name received "{}"'.format(file_name))
 
   # 2. Receive the file size
-  file_size_str = receive_until_separator(conn)
+  file_size_str = tcp_server_connection.receive_until_separator()
   print('File size to receive {}'.format(file_size_str))
 
   # 3. Receive the file
-  receive_file_from_socket(conn, int(file_size_str), file_name)
+  tcp_server_connection.receive_file(int(file_size_str), file_name)
+
 
 def handle_download(conn):
   print('Handling download command')
+
 
 def handle_default(command):
   print('Unknown command {}. Just ignoring it'.format(command))
@@ -32,105 +36,29 @@ COMMAND_HANDLERS = {
 }
 
 
-def destroy_socket(sock, server_address):
-  print('Attempting to close socket server {}'.format(server_address))
-  try:
-    sock.close()
-  except Exception as e:
-    print('ERROR: could not destroy socket server')
-    print('{}'.format(e))
-  print('Server socket destroyed {}'.format(sock))
-
-# send and recv implementation: https://docs.python.org/3/howto/sockets.html#socket-howto
-# Sends 'buffer' of size 'size' into the socket. Raises error on connection broken
-def my_send(sock, buffer, size):
-  total_sent = 0
-  while total_sent < size:
-    sent = sock.send(buffer[total_sent:])
-    if sent == 0:
-      raise RuntimeError("[my_send] socket connection broken")
-    total_sent = total_sent + sent
-
-# returns a buffer of size 'size' bytes readed from the socket
-def my_receive(sock, size):
-  chunks = []
-  MAX_CHUNK_SIZE = 2048
-  bytes_recd = 0
-  while bytes_recd < size:
-    chunk = sock.recv(min(size - bytes_recd, MAX_CHUNK_SIZE))
-    if chunk == b'':
-      raise RuntimeError("[my_receive] socket connection broken")
-    chunks.append(chunk)
-    bytes_recd = bytes_recd + len(chunk)
-  return b''.join(chunks)
-
-def receive_file_from_socket(conn, file_size, file_name):
-  # TODO: use storage dir configured for server
-  filename = "./{}".format(file_name)
-  new_file = open(filename, "wb")
-  bytes_received = 0
-
-  print('File created attemping to receive it')
-  while bytes_received < file_size:
-    # TODO: implement receiving the file in chunks and not load it all in memory
-    data = my_receive(conn, file_size)
-    bytes_received += len(data)
-    new_file.write(data)
-
-# returns a string of received data until the specified separator is found
-# Pos: the separator is discarded from the string
-def receive_until_separator(sock, separator = '|'):
-  buffer = ''
-  A_BYTE = 1
-
-  while True:
-    byte = sock.recv(A_BYTE)
-
-    if byte == b'':
-      raise RuntimeError("[receive_until_separator] socket connection broken")
-
-    char = byte.decode()
-
-    if char != separator:
-      buffer += char
-    else:
-      break
-
-  return buffer
 
 def start_server(server_address, storage_dir):
-  print('TCP: start_server({}, {})'.format(server_address, storage_dir))  
+  tcp_server_listener = TCPServerListener(server_address)
 
-  # Creation
-  print('Attempting to create socket server on {}'.format(server_address))
-  try:
-    MAX_NOT_ACCEPTED_CONNECTIONS_QUEUED = 1
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.bind((server_address))
-    sock.listen(MAX_NOT_ACCEPTED_CONNECTIONS_QUEUED)
-  except Exception as e:
-    print('ERROR: could not create socket server')
-    print('{}'.format(e))
-  print('Socket server created {}'.format(sock))
-
-  def signal_handler(sig, frame):
-    # Destruction
-    destroy_socket(sock, server_address)
-    sys.exit(0)
+  def stop_server(sig, frame):
+      tcp_server_listener.destroy()
+      sys.exit(0)
 
   # Register handler for SIGINT (Ctrl + C)
-  signal.signal(signal.SIGINT, signal_handler)
+  signal.signal(signal.SIGINT, stop_server)
 
   while True:
     print('Waiting a new connection')
-    conn, addr = sock.accept()
+    tcp_server_connection = tcp_server_listener.accept()
 
-    if not conn:
-      destroy_socket(sock, server_address)
+    if not tcp_server_connection:
+      tcp_server_listener.destroy()
       break
 
-    print('New connection received {}'.format(addr))
-    command = my_receive(conn, COMMAND_LEN).decode()
+    print('New connection received:')
+    tcp_server_connection.describe()
+
+    command = tcp_server_connection.receive(COMMAND_LEN).decode()
 
     print('Received command {}'.format(command))
 
@@ -140,6 +68,6 @@ def start_server(server_address, storage_dir):
       handle_default(command)
       continue
     
-    handler(conn)
+    handler(tcp_server_connection)
 
     
