@@ -1,0 +1,14 @@
+
+
+DOWNLOAD TCP                                                        (ARIEL)
+
+PROTOCOLO CAPA APLICACIÓN UDP | --> UPLOAD Y DOWNLOAD DE ARCHIVOS   (SEBA)
+
+RESILIENCIA | --> PROBAR CASOS BORDE (CAIDA DE SRV Y CLI)           (ARIEL)
+
+PRUEBAS DE ACEPTACIÓN                                               (GABY) 
+
+INFORME
+    CUADRO COMPARATIVO                                              (GABY)
+    EXPLICACIÓN IMPLEMENTACIÓN TCP                                  (ARIEL)
+    EXPLICACIÓN IMPLEMENTACIÓN UDP                                  (SEBA)
