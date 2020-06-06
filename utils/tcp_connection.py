@@ -1,5 +1,8 @@
 from abc import ABCMeta
 
+MAX_CHUNK_SIZE = 2048
+
+# metaclass=ABCMeta is for make an abstract class you know what i mean?
 class TCPConnection(metaclass=ABCMeta):
     # returns a string of received data until the specified separator is found
     # Pos: the separator is discarded from the string
@@ -25,7 +28,6 @@ class TCPConnection(metaclass=ABCMeta):
     # returns a buffer of size 'size' bytes readed from the socket
     def receive(self, size):
         chunks = []
-        MAX_CHUNK_SIZE = 2048
         bytes_recvd = 0
         while bytes_recvd < size:
             chunk = self.sock.recv(min(size - bytes_recvd, MAX_CHUNK_SIZE))
@@ -53,8 +55,7 @@ class TCPConnection(metaclass=ABCMeta):
 
         print('File created attemping to receive it')
         while bytes_received < file_size:
-            # TODO: implement receiving the file in chunks and not load it all in memory
-            data = self.receive(file_size)
+            data = self.receive(min(MAX_CHUNK_SIZE, file_size-bytes_received))
             bytes_received += len(data)
             new_file.write(data)
 
