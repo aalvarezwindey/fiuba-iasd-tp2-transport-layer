@@ -1,11 +1,15 @@
 import hashlib
-from random import randint
-from sys import maxsize, getsizeof
 from utils import constants
 
 
 class Paquete:
-    """Modela un paquete de la capa de aplicación."""
+    """
+    Modela un paquete de la capa de aplicación. El mismo se compone
+    de:
+      - Número de secuencia
+      - Checksum
+      - Payload
+    """
 
     def __init__(self, contenido=None, numero_de_secuencia=None):
         """
@@ -14,7 +18,6 @@ class Paquete:
         entonces el contenido pasa a ser el "payload" del paquete.
 
         :param contenido:
-        :param checksum:
         :param numero_de_secuencia:
         """
         if numero_de_secuencia:
@@ -27,17 +30,19 @@ class Paquete:
             self.checksum = self._extraer_checksum(contenido)
 
     def _extraer_payload(self, contenido):
-        return contenido
+        return contenido[constants.HEADER_SIZE:]
 
     def _extraer_numero_de_secuencia(self, contenido):
-        return b''
+        return contenido[:constants.SEQUENCE_NUMBER_SIZE]
 
     def _extraer_checksum(self, contenido):
-        return b''
+        return contenido[constants.SEQUENCE_NUMBER_SIZE:constants.HEADER_SIZE]
 
     def _calcular_checksum(self):
-        # return hash(self.contenido + bytes(self.numero_de_secuencia))
-        return b''
+        data = self.contenido + self.numero_de_secuencia
+        return hashlib \
+            .blake2b(data, digest_size=constants.CHECKSUM_SIZE) \
+            .digest()
 
     def valido(self):
         return self._calcular_checksum() == self.checksum
@@ -47,11 +52,16 @@ class Paquete:
         Devuelve el contenido del paquete completo (número de
         secuencia, checksum y contenido).
         """
-        return bytes(self.numero_de_secuencia) + self.checksum + self.contenido
+        return self.numero_de_secuencia + self.checksum + self.contenido
 
 
 class Ack:
-    """Modela un Ack."""
+    """
+    Modela un Ack. El mismo se compone
+    de:
+      - Número de secuencia
+      - Checksum
+    """
 
     def __init__(self, numero_de_secuencia=None, contenido=None):
         """
@@ -73,87 +83,116 @@ class Ack:
         return self.checksum == self._calcular_checksum()
 
     def _calcular_checksum(self):
-        # return hash(bytes(self.numero_de_secuencia))
-        return b''
+        data = self.numero_de_secuencia
+        return hashlib \
+            .blake2b(data, digest_size=constants.CHECKSUM_SIZE) \
+            .digest()
 
     def _extrer_numero_de_secuencia(self, contenido):
-        return b''
+        return contenido[:constants.SEQUENCE_NUMBER_SIZE]
 
     def _extrer_checksum(self, contenido):
-        return b''
+        return contenido[constants.SEQUENCE_NUMBER_SIZE:]
 
     def contenido_completo(self):
         """
         Devuelve el contenido completo del ack (número de secuencia y checksum).
         """
-        return bytes(self.numero_de_secuencia) + self.checksum
-
-
-class TransmisorDeMensajes:
-
-    def __init__(self, socket, direccion_del_receptor):
-        self.socket = socket
-        self.direccion_del_receptor = direccion_del_receptor
-
-    def enviar(self, mensaje):
-        self.socket.sendto(
-            mensaje.contenido_completo(),
-            self.direccion_del_receptor
-        )
-
-
-class ReceptorDeMensajes:
-
-    def __init__(self, socket, tipo_de_mensaje):
-        self.socket = socket
-        self.tipo_de_mensaje = tipo_de_mensaje
-        self.direccion_del_transmisor = None
-
-    def recibir(self):
-        data, addr = self.socket.recvfrom(constants.CHUNK_SIZE)
-        # self.direccion_del_transmisor = addr
-        return self.tipo_de_mensaje(contenido=data)
-
-
-class Receptor:
-
-    def __init__(self, socket, direccion_del_receptor):
-        self.socket = socket
-        self.direccion_del_receptor = direccion_del_receptor
-        self.receptor_de_paquetes = ReceptorDeMensajes(socket, Paquete)
-        self.transmisor_de_mensajes = TransmisorDeMensajes(socket, direccion_del_receptor)
-
-    def recibir(self):
-        paquete = self.receptor_de_paquetes.recibir()
-        self.transmisor_de_mensajes.enviar(Ack(numero_de_secuencia=b''))
-        return paquete.contenido
+        return self.numero_de_secuencia + self.checksum
 
 
 class Transmisor:
 
-    def __init__(self, socket, direccion_del_receptor):
+    def __init__(self, socket, direccion_del_receptor=None):
         self.socket = socket
-        self.direccion_de_receptor = direccion_del_receptor
-        self.transmisor_de_paquetes = TransmisorDeMensajes(socket, direccion_del_receptor)
-        self.receptor_de_acks = ReceptorDeMensajes(socket, Ack)
+        self.receptor = direccion_del_receptor
 
-    def enviar(self, contenido):
-        # print(contenido, getsizeof(contenido))
-        if len(contenido) > constants.CHUNK_SIZE:
-            raise Exception('El contenido que se pretende transmitir '
-                            'es mayor que {}.'.format(constants.CHUNK_SIZE))
+    def enviar(self, mensaje):
+        self.socket.sendto(
+            mensaje.contenido_completo(),
+            self.receptor
+        )
 
-        self.transmisor_de_paquetes.enviar(Paquete(contenido=contenido, numero_de_secuencia=b''))
+
+class Receptor:
+
+    def __init__(self, socket, tipo_de_mensaje):
+        self.socket = socket
+        self.tipo_de_mensaje = tipo_de_mensaje
+        self.transmisor = None
+
+    def recibir(self):
+        data, addr = self.socket.recvfrom(constants.CHUNK_SIZE)
+        self.transmisor = addr
+        return self.tipo_de_mensaje(contenido=data)
+
+
+class ReceptorDePaquetes:
+
+    def __init__(self, socket):
+        self.socket = socket
+        self.receptor_de_paquetes = Receptor(socket, Paquete)
+        self.transmisor_de_mensajes = Transmisor(socket)
+        self.ultimo_numero_de_secuencia = -1
+
+    def recibir_paquete(self):
+        paquete = self.receptor_de_paquetes.recibir()
+        transmisor = self.receptor_de_paquetes.transmisor
+        self.transmisor_de_mensajes.receptor = transmisor
+
+        numero_de_secuencia_paquete = int.from_bytes(paquete.numero_de_secuencia, "big")
+        if paquete.valido() and (self.ultimo_numero_de_secuencia + 1 == numero_de_secuencia_paquete):
+            # Ok
+            self.ultimo_numero_de_secuencia += 1
+            ack = Ack(numero_de_secuencia=self.ultimo_numero_de_secuencia.to_bytes(constants.SEQUENCE_NUMBER_SIZE, "big"))
+            self.transmisor_de_mensajes.enviar(ack)
+            return paquete.contenido
+        else:
+            # Pedir retransmicion
+            ack = Ack(numero_de_secuencia=self.ultimo_numero_de_secuencia.to_bytes(constants.SEQUENCE_NUMBER_SIZE, "big"))
+            self.transmisor_de_mensajes.enviar(ack)
+            return self.recibir_paquete()
+
+    def recibir_archivo(self, archivo, file_size):
+        bytes_received = 0
+
+        while bytes_received < file_size:
+            data = self.recibir_paquete()
+            bytes_received += len(data)
+            archivo.write(data)
+
+
+class TransmisorDeContenido:
+
+    def __init__(self, socket, receptor):
+        self.numero_de_secuencia = 0
+        self.transmisor_de_paquetes = Transmisor(socket, receptor)
+        self.receptor_de_acks = Receptor(socket, Ack)
+
+    def _crear_paquete(self, contenido):
+        if len(contenido) > constants.PAYLOAD_SIZE:
+            raise Exception('El contenido que se pretende enviar es '
+                            'mayor que el permitido por paquete.')
+
+        return Paquete(
+            contenido=contenido,
+            numero_de_secuencia=self.numero_de_secuencia
+                .to_bytes(constants.SEQUENCE_NUMBER_SIZE, "big"))
+
+    def enviar_contenido(self, contenido):
+        paquete = self._crear_paquete(contenido)
+        self.transmisor_de_paquetes.enviar(paquete)
+
         ack = self.receptor_de_acks.recibir()
-        return ack.valido()
 
-# class EsperarAck:
-#
-#     def __init__(self, socket):
-#         self.socket = socket
-#         self.receptor_de_paquetes = ReceptorDePaquetes(socket)
-#
-#     def ack(self, numero_de_secuencia_esperado):
-#         # TODO: agregar timeout.
-#         paquete = self.receptor_de_paquetes.recibir()
-#         return numero_de_secuencia_esperado == paquete.numero_de_secuencia
+        if not ack.valido() or not int.from_bytes(ack.numero_de_secuencia, "big") == self.numero_de_secuencia:
+            self.enviar_contenido(contenido)  # Retransmición
+        else:
+            self.numero_de_secuencia += 1  # Ok
+
+    def enviar_archivo(self, archivo):
+        while True:
+            chunk = archivo.read(constants.PAYLOAD_SIZE)
+            if not chunk:
+                break
+            self.enviar_contenido(chunk)

@@ -19,14 +19,9 @@ def upload_file(server_address, src, name):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind(own_address)
 
-    transmisor = udp.Transmisor(sock, server_address)
-    transmisor.enviar(str(size).encode())
-
-    while True:
-        chunk = f.read(constants.CHUNK_SIZE)
-        if not chunk:
-            break
-        transmisor.enviar(chunk)
+    transmisor = udp.TransmisorDeContenido(sock, server_address)
+    transmisor.enviar_contenido(str(size).encode())
+    transmisor.enviar_archivo(f)
 
     f.close()
     sock.close()
