@@ -1,6 +1,4 @@
 from utils.tcp_client_connection import TCPClientConnection
-
-import socket
 import os
 
 UPLOAD_CMD = '1'
@@ -41,3 +39,4 @@ def upload_file(server_address, src, name):
   print('Finish sending the file')
 
   tcp_client_connection.destroy()
+  return 0
