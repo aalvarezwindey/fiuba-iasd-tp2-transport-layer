@@ -47,17 +47,14 @@ class TCPConnection(metaclass=ABCMeta):
                 raise RuntimeError("[my_send] socket connection broken")
             total_sent = total_sent + sent
 
-    def receive_file(self, file_size, file_name):
-        # TODO: use storage dir configured for server
-        filename = "./{}".format(file_name)
-        new_file = open(filename, "wb")
+    def receive_file(self, a_file, expected_file_size):
         bytes_received = 0
 
         print('File created attemping to receive it')
-        while bytes_received < file_size:
-            data = self.receive(min(MAX_CHUNK_SIZE, file_size-bytes_received))
+        while bytes_received < expected_file_size:
+            data = self.receive(min(MAX_CHUNK_SIZE, expected_file_size - bytes_received))
             bytes_received += len(data)
-            new_file.write(data)
+            a_file.write(data)
 
     def send_file(self, a_file, file_size):
         read = 0

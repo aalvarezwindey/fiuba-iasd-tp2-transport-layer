@@ -3,12 +3,13 @@ from utils.tcp_server_connection import TCPServerConnection
 
 import signal
 import sys
+import os
 
 COMMAND_LEN = 1
 UPLOAD_CMD = '1'
 DOWNLOAD_CMD = '2'
 
-def handle_upload(tcp_server_connection):
+def handle_upload(tcp_server_connection, storage_dir):
   print('Handling upload command')
 
   # 1. Receive file name
@@ -20,14 +21,16 @@ def handle_upload(tcp_server_connection):
   print('File size to receive {}'.format(file_size_str))
 
   # 3. Receive the file
-  tcp_server_connection.receive_file(int(file_size_str), file_name)
+  # SUPUESTO: storage_dir must not cotain / at end
+  new_file = open("{}/{}".format(storage_dir, file_name), "wb")
+  tcp_server_connection.receive_file(new_file, int(file_size_str))
 
 
-def handle_download(conn):
+def handle_download(conn, storage_dir):
   print('Handling download command')
 
 
-def handle_default(command):
+def handle_default(command, storage_dir):
   print('Unknown command {}. Just ignoring it'.format(command))
 
 COMMAND_HANDLERS = {
@@ -38,6 +41,12 @@ COMMAND_HANDLERS = {
 
 
 def start_server(server_address, storage_dir):
+  if not os.path.isdir(storage_dir):
+    print("Storage dir do not exist.")
+    return
+    
+  storage_dir = storage_dir[:-1] if storage_dir.endswith('/') else storage_dir
+
   tcp_server_listener = TCPServerListener(server_address)
 
   def stop_server(sig, frame):
@@ -65,9 +74,9 @@ def start_server(server_address, storage_dir):
     handler = COMMAND_HANDLERS.get(command)
 
     if handler == None:
-      handle_default(command)
+      handle_default(command, storage_dir)
       continue
     
-    handler(tcp_server_connection)
+    handler(tcp_server_connection, storage_dir)
 
     
