@@ -31,6 +31,8 @@ downloaded_example_file_name = "downloaded_example_file.md"
 downloaded_example_file_absolute_folder = absolute_path_current_dir
 downloaded_example_file_absolute_path = downloaded_example_file_absolute_folder + "/" + downloaded_example_file_name
 
+WAIT_SECS_FOR_SERVER_INITIALIZATION = 1
+
 # - UTILS MULTIPURPOSE FUNCTIONS ####################################
 
 def tcp_start_server():
@@ -83,7 +85,7 @@ def stop_client(cli_process):
 def tcp_upload_file():
   svr_process = tcp_start_server()
   # Prudential time for server setup
-  time.sleep(1)
+  time.sleep(WAIT_SECS_FOR_SERVER_INITIALIZATION)
 
   cli_process = tcp_start_upload()
 
@@ -118,7 +120,7 @@ def tcp_upload_file():
 def tcp_download_file():
   svr_process = tcp_start_server()
   # Prudential time for server setup
-  time.sleep(1)
+  time.sleep(WAIT_SECS_FOR_SERVER_INITIALIZATION)
 
   cli_process = tcp_start_download()
 
