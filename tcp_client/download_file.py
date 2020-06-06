@@ -15,7 +15,12 @@ def download_file(server_address, name, dst):
     return -1
 
   
-  tcp_client_connection = TCPClientConnection(server_address)
+  try:
+    tcp_client_connection = TCPClientConnection(server_address)
+  except Exception as e:
+    print('ERROR: could not connect with server {}'.format(server_address))
+    print('{}'.format(e))
+    return -1
 
   # 0. Send command
   cmd_buffer = DOWNLOAD_CMD.encode()

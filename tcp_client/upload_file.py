@@ -15,10 +15,15 @@ def upload_file(server_address, src, name):
   except Exception as e:
     print('ERROR: could not open file at {}'.format(src))
     print('{}'.format(e))
-    return
+    return -1
   print('File opened successfully')
 
-  tcp_client_connection = TCPClientConnection(server_address)
+  try:
+    tcp_client_connection = TCPClientConnection(server_address)
+  except Exception as e:
+    print('ERROR: could not connect with server {}'.format(server_address))
+    print('{}'.format(e))
+    return -1
 
   # 0. Send command
   cmd_buffer = UPLOAD_CMD.encode()
