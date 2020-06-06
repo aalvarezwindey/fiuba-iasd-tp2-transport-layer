@@ -21,7 +21,6 @@ def handle_upload(tcp_server_connection, storage_dir):
   print('File size to receive {}'.format(file_size_str))
 
   # 3. Receive the file
-  # SUPUESTO: storage_dir must not cotain / at end
   new_file = open("{}{}".format(storage_dir, file_name), "wb")
   tcp_server_connection.receive_file(new_file, int(file_size_str))
 
