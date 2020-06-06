@@ -83,7 +83,7 @@ def stop_client(cli_process):
 def tcp_upload_file():
   svr_process = tcp_start_server()
   # Prudential time for server setup
-  time.sleep(5)
+  time.sleep(1)
 
   cli_process = tcp_start_upload()
 
@@ -118,7 +118,7 @@ def tcp_upload_file():
 def tcp_download_file():
   svr_process = tcp_start_server()
   # Prudential time for server setup
-  time.sleep(5)
+  time.sleep(1)
 
   cli_process = tcp_start_download()
 
