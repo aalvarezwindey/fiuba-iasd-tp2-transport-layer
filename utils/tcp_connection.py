@@ -50,7 +50,6 @@ class TCPConnection(metaclass=ABCMeta):
     def receive_file(self, a_file, expected_file_size):
         bytes_received = 0
 
-        print('File created attemping to receive it')
         while bytes_received < expected_file_size:
             data = self.receive(min(MAX_CHUNK_SIZE, expected_file_size - bytes_received))
             bytes_received += len(data)

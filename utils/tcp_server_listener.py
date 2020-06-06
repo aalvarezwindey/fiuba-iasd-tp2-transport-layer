@@ -15,6 +15,7 @@ class TCPServerListener:
         except Exception as e:
             print('ERROR: could not create socket server')
             print('{}'.format(e))
+            raise e
         self.server_address = server_address
         print('Socket server created {}'.format(self.sock))
 

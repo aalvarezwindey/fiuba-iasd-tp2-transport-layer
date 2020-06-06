@@ -11,6 +11,6 @@ class TCPClientConnection(TCPConnection):
         except Exception as e:
             print('ERROR: could not connect to server at {}'.format(server_address))
             print('{}'.format(e))
-            return
+            raise e
         self.server_address = server_address
         print('Client connected successfully {}'.format(self.sock))
