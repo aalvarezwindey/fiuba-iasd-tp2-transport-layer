@@ -9,6 +9,8 @@ COMMAND_LEN = 1
 UPLOAD_CMD = '1'
 DOWNLOAD_CMD = '2'
 
+ERROR_FILE_DOES_NOT_EXIST = '-1'
+
 def handle_upload(tcp_server_connection, storage_dir):
   print('Handling upload command')
 
@@ -21,13 +23,40 @@ def handle_upload(tcp_server_connection, storage_dir):
   print('File size to receive {}'.format(file_size_str))
 
   # 3. Receive the file
-  # SUPUESTO: storage_dir must not cotain / at end
-  new_file = open("{}{}".format(storage_dir, file_name), "wb")
+  file_path = "{}{}".format(storage_dir, file_name)
+  print('Start receiving the file at: "{}"'.format(file_path))
+  new_file = open(file_path, "wb")
   tcp_server_connection.receive_file(new_file, int(file_size_str))
+  print('Finish receiving the file')
 
 
-def handle_download(conn, storage_dir):
+def handle_download(tcp_server_connection, storage_dir):
   print('Handling download command')
+
+  # 1. Receive file name to download
+  file_name = tcp_server_connection.receive_until_separator()
+  file_path = '{}{}'.format(storage_dir, file_name)
+  print('File to download "{}"'.format(file_name))
+
+  if not os.path.isfile(file_path):
+    # File does not exists
+    print('Sending error code {}: file does not exist'.format(ERROR_FILE_DOES_NOT_EXIST))
+    tcp_server_connection.send_with_separator(str(ERROR_FILE_DOES_NOT_EXIST).encode())
+  else:
+    file_to_download = open(file_path, "rb")
+    file_to_download.seek(0, os.SEEK_END)
+    file_size = file_to_download.tell()
+    file_to_download.seek(0, os.SEEK_SET)
+
+    # 2. Send file size
+    print('Sending file size of {} bytes'.format(file_size))
+    tcp_server_connection.send_with_separator(str(file_size).encode())
+
+    # 3. Sending the file
+    print('Sending the file')
+    tcp_server_connection.send_file(file_to_download, file_size)
+    print('Finish sending the file')
+
 
 
 def handle_default(command, storage_dir):
@@ -45,6 +74,7 @@ def start_server(server_address, storage_dir):
     print("Storage dir do not exist.")
     return
     
+  # SUPUESTO: storage_dir puede contener o no una / al final del path
   storage_dir = storage_dir + '/' if not storage_dir.endswith('/') else storage_dir
 
   tcp_server_listener = TCPServerListener(server_address)
@@ -64,8 +94,7 @@ def start_server(server_address, storage_dir):
       tcp_server_listener.destroy()
       break
 
-    print('New connection received:')
-    tcp_server_connection.describe()
+    print('New connection received: {}'.format(tcp_server_connection.describe()))
 
     command = tcp_server_connection.receive(COMMAND_LEN).decode()
 
@@ -79,4 +108,5 @@ def start_server(server_address, storage_dir):
     
     handler(tcp_server_connection, storage_dir)
 
+  tcp_server_listener.destroy()
     
