@@ -22,7 +22,7 @@ def handle_upload(tcp_server_connection, storage_dir):
 
   # 3. Receive the file
   # SUPUESTO: storage_dir must not cotain / at end
-  new_file = open("{}/{}".format(storage_dir, file_name), "wb")
+  new_file = open("{}{}".format(storage_dir, file_name), "wb")
   tcp_server_connection.receive_file(new_file, int(file_size_str))
 
 
@@ -45,7 +45,7 @@ def start_server(server_address, storage_dir):
     print("Storage dir do not exist.")
     return
     
-  storage_dir = storage_dir[:-1] if storage_dir.endswith('/') else storage_dir
+  storage_dir = storage_dir + '/' if not storage_dir.endswith('/') else storage_dir
 
   tcp_server_listener = TCPServerListener(server_address)
 
