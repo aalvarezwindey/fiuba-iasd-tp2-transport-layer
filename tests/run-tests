@@ -27,6 +27,9 @@ storaged_example_file_name = "storaged_example_file.md"
 storaged_example_file_absolute_folder = absolute_path_current_dir
 storaged_example_file_absolute_path = storaged_example_file_absolute_folder + "/" + storaged_example_file_name
 
+downloaded_example_file_name = "downloaded_example_file.md"
+downloaded_example_file_absolute_folder = absolute_path_current_dir
+downloaded_example_file_absolute_path = downloaded_example_file_absolute_folder + "/" + downloaded_example_file_name
 
 # - UTILS MULTIPURPOSE FUNCTIONS ####################################
 
@@ -49,6 +52,19 @@ def tcp_start_upload():
                          '-P', tcp_server_port,
                          '-s', original_example_file_absolute_path,
                          '-n', storaged_example_file_name,
+                         '-p', 'tcp'],
+                         stdout=-1)
+  print('[CLIENT] PID of running TCP client: {}'.format(cli_process.pid))
+  return cli_process
+
+def tcp_start_download():
+  print('[CLIENT] Absolute path of the downloaded file destiny: "{}"'.format(downloaded_example_file_absolute_folder))
+  print('[CLIENT] Name of the file after been downloaded: "{}'.format(downloaded_example_file_name))
+  cli_process = subprocess.Popen(args=[absolute_path_current_dir + '/../download-file',
+                         '-H', tcp_server_dir,
+                         '-P', tcp_server_port,
+                         '-n', storaged_example_file_name,
+                         '-d', downloaded_example_file_absolute_path,
                          '-p', 'tcp'],
                          stdout=-1)
   print('[CLIENT] PID of running TCP client: {}'.format(cli_process.pid))
@@ -99,6 +115,41 @@ def tcp_upload_file():
 
   return True
 
+def tcp_download_file():
+  svr_process = tcp_start_server()
+  # Prudential time for server setup
+  time.sleep(5)
+
+  cli_process = tcp_start_download()
+
+  print('[TEST] Waiting for the client to finish downloading the file...')
+  cli_process.wait()
+
+  if (cli_process.returncode == 0):
+    print("[TEST] File has been fully transferred.")
+  else:
+    print("[TEST] Client error receiving file.")
+    stop_server(svr_process)
+    stop_client(cli_process)
+    return False
+  
+  files_are_equal = filecmp.cmp(storaged_example_file_absolute_path,
+                                downloaded_example_file_absolute_path,
+                                shallow=False)
+  
+  if not files_are_equal:
+    print("[TEST] Original and downloaded files are not equal.")
+    stop_server(svr_process)
+    stop_client(cli_process)
+    return False
+  else:
+    print("[TEST] Original and downloaded files are equal.")
+    
+  stop_server(svr_process)
+  stop_client(cli_process)
+
+  return True
+
 def main():
   print(bcolors.GREEN + "[TEST TCP UPLOAD FILE]: Starting..." + bcolors.ENDC)
   pass_test_tcp_upload_file = tcp_upload_file()
@@ -106,5 +157,12 @@ def main():
     print(bcolors.RED + "[TEST TCP UPLOAD FILE]: Failed." + bcolors.ENDC)
   else:
     print(bcolors.GREEN + "[TEST TCP UPLOAD FILE]: Passed." + bcolors.ENDC)
+
+  print(bcolors.GREEN + "[TEST TCP DOWNLOAD FILE]: Starting..." + bcolors.ENDC)
+  pass_test_tcp_download_file = tcp_download_file()
+  if not pass_test_tcp_download_file:
+    print(bcolors.RED + "[TEST TCP DOWNLOAD FILE]: Failed." + bcolors.ENDC)
+  else:
+    print(bcolors.GREEN + "[TEST TCP DOWNLOAD FILE]: Passed." + bcolors.ENDC)
 
 main()
