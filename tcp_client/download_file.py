@@ -18,6 +18,7 @@ def download_file(server_address, name, dst):
   try:
     tcp_client_connection = TCPClientConnection(server_address)
   except Exception as e:
+    os.unlink(file_downloaded.name)
     print('ERROR: could not connect with server {}'.format(server_address))
     print('{}'.format(e))
     return -1
