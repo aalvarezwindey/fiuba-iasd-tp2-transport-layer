@@ -90,23 +90,33 @@ def start_server(server_address, storage_dir):
     print('Waiting a new connection')
     tcp_server_connection = tcp_server_listener.accept()
 
-    if not tcp_server_connection:
-      tcp_server_listener.destroy()
-      break
+    try:
+      if not tcp_server_connection:
+        tcp_server_listener.destroy()
+        break
 
-    print('New connection received: {}'.format(tcp_server_connection.describe()))
+      print('New connection received: {}'.format(tcp_server_connection.describe()))
 
-    command = tcp_server_connection.receive(COMMAND_LEN).decode()
+      command = tcp_server_connection.receive(COMMAND_LEN).decode()
 
-    print('Received command {}'.format(command))
+      print('Received command {}'.format(command))
 
-    handler = COMMAND_HANDLERS.get(command)
+      handler = COMMAND_HANDLERS.get(command)
 
-    if handler == None:
-      handle_default(command, storage_dir)
+      if handler == None:
+        handle_default(command, storage_dir)
+        continue
+      
+      handler(tcp_server_connection, storage_dir)
+    except Exception as e:
+      if tcp_server_connection:
+        print('ERROR: during connection with {}'.format(tcp_server_connection.describe()))
+        tcp_server_connection.destroy()
+      
+      print('{}'.format(e))
+      # If any client fails, the server keeps attending new clients
       continue
-    
-    handler(tcp_server_connection, storage_dir)
+
 
   tcp_server_listener.destroy()
     
