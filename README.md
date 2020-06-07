@@ -3,6 +3,11 @@
 
 El objetivo del trabajo práctico es implementar un sistema de almacenamiento de archivos en la nube utilizando los protocolos de capa de transporte TCP y UDP. Este repositorio facilita a los grupos un esqueleto con los comandos que el sistema debe exponer.
 
+## Pruebas
+
+Para ejecutar las pruebas correr `./tests/run-tests` desde la raíz del proyecto
+
+
 ## Comandos
 
 Este repositorio expone los 3 comandos descriptos en el enunciado del TP, con todos los parametros requeridos.
