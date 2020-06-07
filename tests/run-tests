@@ -10,6 +10,7 @@ import filecmp
 class bcolors:
     GREEN = '\033[32m'
     RED = '\033[31m'
+    YELLOW  = '\033[33m'
     ENDC = '\033[0m'
 
 # - TESTS GLOBAL VARIABLES DEFINITIONS ##############################
@@ -152,6 +153,38 @@ def tcp_download_file():
 
   return True
 
+def test_tcp_download_file_with_packet_loss():
+  comcast = subprocess.Popen('comcast --device=lo --packet-loss=15%', shell=True, stdout=subprocess.PIPE)
+  comcast.wait()
+  print('comcast start return code: {}'.format(comcast.returncode))
+
+  if comcast.returncode != 0:
+    print(bcolors.YELLOW + "[TEST TCP DOWNLOAD FILE WITH PACKET LOSS]: could not run comcast be sure to install it." + bcolors.ENDC)
+    return True
+
+  result = tcp_download_file()
+
+  comcast = subprocess.Popen('comcast --stop --device=lo', shell=True, stdout=subprocess.PIPE)
+  comcast.wait()
+  print('comcast stop return code: {}'.format(comcast.returncode))
+  return result
+
+def test_tcp_upload_file_with_packet_loss():
+  comcast = subprocess.Popen('comcast --device=lo --packet-loss=15%', shell=True, stdout=subprocess.PIPE)
+  comcast.wait()
+  print('comcast start return code: {}'.format(comcast.returncode))
+
+  if comcast.returncode != 0:
+    print(bcolors.YELLOW + "[TEST TCP UPLOAD FILE WITH PACKET LOSS]: could not run comcast be sure to install it." + bcolors.ENDC)
+    return True
+
+  result = tcp_upload_file()
+
+  comcast = subprocess.Popen('comcast --stop --device=lo', shell=True, stdout=subprocess.PIPE)
+  comcast.wait()
+  print('comcast stop return code: {}'.format(comcast.returncode))
+  return result
+
 def main():
   print(bcolors.GREEN + "[TEST TCP UPLOAD FILE]: Starting..." + bcolors.ENDC)
   pass_test_tcp_upload_file = tcp_upload_file()
@@ -166,5 +199,20 @@ def main():
     print(bcolors.RED + "[TEST TCP DOWNLOAD FILE]: Failed." + bcolors.ENDC)
   else:
     print(bcolors.GREEN + "[TEST TCP DOWNLOAD FILE]: Passed." + bcolors.ENDC)
+
+  print(bcolors.GREEN + "[TEST TCP UPLOAD FILE WITH PACKET LOSS]: Starting..." + bcolors.ENDC)
+  pass_test_tcp_upload_file_with_packet_loss = test_tcp_upload_file_with_packet_loss()
+  if not pass_test_tcp_upload_file_with_packet_loss:
+    print(bcolors.RED + "[TEST TCP UPLOAD FILE WITH PACKET LOSS]: Failed." + bcolors.ENDC)
+  else:
+    print(bcolors.GREEN + "[TEST TCP UPLOAD FILE WITH PACKET LOSS]: Passed." + bcolors.ENDC)
+
+  print(bcolors.GREEN + "[TEST TCP DOWNLOAD FILE WITH PACKET LOSS]: Starting..." + bcolors.ENDC)
+  pass_test_tcp_download_file_with_packet_loss = test_tcp_download_file_with_packet_loss()
+  if not pass_test_tcp_download_file_with_packet_loss:
+    print(bcolors.RED + "[TEST TCP DOWNLOAD FILE WITH PACKET LOSS]: Failed." + bcolors.ENDC)
+  else:
+    print(bcolors.GREEN + "[TEST TCP DOWNLOAD FILE WITH PACKET LOSS]: Passed." + bcolors.ENDC)
+
 
 main()
