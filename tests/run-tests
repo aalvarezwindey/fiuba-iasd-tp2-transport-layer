@@ -58,7 +58,7 @@ def udp_start_server():
                          '-P', tcp_server_port,
                          '-s', storaged_udp_example_file_absolute_folder,
                          '-p', 'udp'],
-                         stdout=1)
+                         stdout=-1)
   print('[SERVER] PID of running TCP server: {}'.format(svr_process.pid))
   return svr_process
 
@@ -84,7 +84,7 @@ def udp_start_upload():
                          '-s', original_example_file_absolute_path,
                          '-n', storaged_udp_example_file_name,
                          '-p', 'udp'],
-                         stdout=1)
+                         stdout=-1)
   print('[CLIENT] PID of running TCP client: {}'.format(cli_process.pid))
   return cli_process
 
