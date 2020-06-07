@@ -1,5 +1,7 @@
 import os
 import socket
+import signal
+import sys
 from os import path
 
 from utils import constants, udp
@@ -7,6 +9,16 @@ from utils import constants, udp
 
 def get_timestamp():
     pass
+
+
+def destroy(sock, server_address):
+    print('Attempting to close socket server {}'.format(server_address))
+    try:
+        sock.close()
+    except Exception as e:
+        print('ERROR: could not destroy socket server')
+        print('{}'.format(e))
+    print('Server socket destroyed {}'.format(sock))
 
 
 def start_server(server_address, storage_dir):
@@ -23,6 +35,12 @@ def start_server(server_address, storage_dir):
         sock.bind(server_address)
         receptor = udp.ReceptorDePaquetes(sock)
         transmisor = udp.TransmisorDeContenido(sock)
+
+        def stop_server(sig, frame):
+            destroy(sock, server_address)
+            sys.exit(0)
+
+        signal.signal(signal.SIGINT, stop_server)
 
         while True:
             accion = receptor.recibir_paquete().decode()

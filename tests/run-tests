@@ -18,56 +18,84 @@ class bcolors:
 absolute_path_current_dir = os.path.dirname(os.path.abspath(__file__))
 
 tcp_server_dir = "localhost"
-tcp_server_port = "6672"
+tcp_server_port = "6673"
 
 original_example_file_name = "example_file.md"
 original_example_file_absolute_folder = absolute_path_current_dir
 original_example_file_absolute_path = original_example_file_absolute_folder + "/" + original_example_file_name
 
-storaged_example_file_name = "storaged_example_file.md"
-storaged_example_file_absolute_folder = absolute_path_current_dir
-storaged_example_file_absolute_path = storaged_example_file_absolute_folder + "/" + storaged_example_file_name
+storaged_tcp_example_file_name = "storaged_tcp_example_file.md"
+storaged_tcp_example_file_absolute_folder = absolute_path_current_dir
+storaged_tcp_example_file_absolute_path = storaged_tcp_example_file_absolute_folder + "/" + storaged_tcp_example_file_name
 
-downloaded_example_file_name = "downloaded_example_file.md"
-downloaded_example_file_absolute_folder = absolute_path_current_dir
-downloaded_example_file_absolute_path = downloaded_example_file_absolute_folder + "/" + downloaded_example_file_name
+downloaded_tcp_example_file_name = "downloaded_tcp_example_file.md"
+downloaded_tcp_example_file_absolute_folder = absolute_path_current_dir
+downloaded_tcp_example_file_absolute_path = downloaded_tcp_example_file_absolute_folder + "/" + downloaded_tcp_example_file_name
+
+storaged_udp_example_file_name = "storaged_udp_example_file.md"
+storaged_udp_example_file_absolute_folder = absolute_path_current_dir
+storaged_udp_example_file_absolute_path = storaged_udp_example_file_absolute_folder + "/" + storaged_udp_example_file_name
 
 WAIT_SECS_FOR_SERVER_INITIALIZATION = 1
 
 # - UTILS MULTIPURPOSE FUNCTIONS ####################################
 
 def tcp_start_server():
-  print('[SERVER] Absolute path of server storage: "{}"'.format(storaged_example_file_absolute_folder))
+  print('[SERVER] Absolute path of server storage: "{}"'.format(storaged_tcp_example_file_absolute_folder))
   svr_process = subprocess.Popen(args=[absolute_path_current_dir + '/../start-server',
                          '-H', tcp_server_dir,
                          '-P', tcp_server_port,
-                         '-s', storaged_example_file_absolute_folder,
+                         '-s', storaged_tcp_example_file_absolute_folder,
                          '-p', 'tcp'],
                          stdout=-1)
   print('[SERVER] PID of running TCP server: {}'.format(svr_process.pid))
   return svr_process
 
+def udp_start_server():
+  print('[SERVER] Absolute path of server storage: "{}"'.format(storaged_udp_example_file_absolute_folder))
+  svr_process = subprocess.Popen(args=[absolute_path_current_dir + '/../start-server',
+                         '-H', tcp_server_dir,
+                         '-P', tcp_server_port,
+                         '-s', storaged_udp_example_file_absolute_folder,
+                         '-p', 'udp'],
+                         stdout=1)
+  print('[SERVER] PID of running TCP server: {}'.format(svr_process.pid))
+  return svr_process
+
 def tcp_start_upload():
   print('[CLIENT] Absolute path of example file: "{}"'.format(original_example_file_absolute_path))
-  print('[CLIENT] Name of the file after been transferred: "{}'.format(storaged_example_file_name))
+  print('[CLIENT] Name of the file after been transferred: "{}'.format(storaged_tcp_example_file_name))
   cli_process = subprocess.Popen(args=[absolute_path_current_dir + '/../upload-file',
                          '-H', tcp_server_dir,
                          '-P', tcp_server_port,
                          '-s', original_example_file_absolute_path,
-                         '-n', storaged_example_file_name,
+                         '-n', storaged_tcp_example_file_name,
                          '-p', 'tcp'],
                          stdout=-1)
   print('[CLIENT] PID of running TCP client: {}'.format(cli_process.pid))
   return cli_process
 
+def udp_start_upload():
+  print('[CLIENT] Absolute path of example file: "{}"'.format(original_example_file_absolute_path))
+  print('[CLIENT] Name of the file after been transferred: "{}'.format(storaged_udp_example_file_name))
+  cli_process = subprocess.Popen(args=[absolute_path_current_dir + '/../upload-file',
+                         '-H', tcp_server_dir,
+                         '-P', tcp_server_port,
+                         '-s', original_example_file_absolute_path,
+                         '-n', storaged_udp_example_file_name,
+                         '-p', 'udp'],
+                         stdout=1)
+  print('[CLIENT] PID of running TCP client: {}'.format(cli_process.pid))
+  return cli_process
+
 def tcp_start_download():
-  print('[CLIENT] Absolute path of the downloaded file destiny: "{}"'.format(downloaded_example_file_absolute_folder))
-  print('[CLIENT] Name of the file after been downloaded: "{}'.format(downloaded_example_file_name))
+  print('[CLIENT] Absolute path of the downloaded file destiny: "{}"'.format(downloaded_tcp_example_file_absolute_folder))
+  print('[CLIENT] Name of the file after been downloaded: "{}'.format(downloaded_tcp_example_file_name))
   cli_process = subprocess.Popen(args=[absolute_path_current_dir + '/../download-file',
                          '-H', tcp_server_dir,
                          '-P', tcp_server_port,
-                         '-n', storaged_example_file_name,
-                         '-d', downloaded_example_file_absolute_path,
+                         '-n', storaged_tcp_example_file_name,
+                         '-d', downloaded_tcp_example_file_absolute_path,
                          '-p', 'tcp'],
                          stdout=-1)
   print('[CLIENT] PID of running TCP client: {}'.format(cli_process.pid))
@@ -102,7 +130,7 @@ def tcp_upload_file():
     return False
   
   files_are_equal = filecmp.cmp(original_example_file_absolute_path,
-                                storaged_example_file_absolute_path,
+                                storaged_tcp_example_file_absolute_path,
                                 shallow=False)
   
   if not files_are_equal:
@@ -136,8 +164,8 @@ def tcp_download_file():
     stop_client(cli_process)
     return False
   
-  files_are_equal = filecmp.cmp(storaged_example_file_absolute_path,
-                                downloaded_example_file_absolute_path,
+  files_are_equal = filecmp.cmp(storaged_tcp_example_file_absolute_path,
+                                downloaded_tcp_example_file_absolute_path,
                                 shallow=False)
   
   if not files_are_equal:
@@ -185,6 +213,41 @@ def test_tcp_upload_file_with_packet_loss():
   print('comcast stop return code: {}'.format(comcast.returncode))
   return result
 
+def udp_upload_file():
+  svr_process = udp_start_server()
+  # Prudential time for server setup
+  time.sleep(WAIT_SECS_FOR_SERVER_INITIALIZATION)
+
+  cli_process = udp_start_upload()
+
+  print('[TEST] Waiting for the client to finish transferring the file...')
+  cli_process.wait()
+
+  if (cli_process.returncode == 0):
+    print("[TEST] File has been fully transferred.")
+  else:
+    print("[TEST] Client error transferring file.")
+    stop_server(svr_process)
+    stop_client(cli_process)
+    return False
+  
+  files_are_equal = filecmp.cmp(original_example_file_absolute_path,
+                                storaged_udp_example_file_absolute_path,
+                                shallow=False)
+  
+  if not files_are_equal:
+    print("[TEST] Original and transferred files are not equal.")
+    stop_server(svr_process)
+    stop_client(cli_process)
+    return False
+  else:
+    print("[TEST] Original and transferred files are equal.")
+    
+  stop_server(svr_process)
+  stop_client(cli_process)
+
+  return True
+
 def main():
   print(bcolors.GREEN + "[TEST TCP UPLOAD FILE]: Starting..." + bcolors.ENDC)
   pass_test_tcp_upload_file = tcp_upload_file()
@@ -213,6 +276,13 @@ def main():
     print(bcolors.RED + "[TEST TCP DOWNLOAD FILE WITH PACKET LOSS]: Failed." + bcolors.ENDC)
   else:
     print(bcolors.GREEN + "[TEST TCP DOWNLOAD FILE WITH PACKET LOSS]: Passed." + bcolors.ENDC)
+
+  print(bcolors.GREEN + "[TEST UDP UPLOAD FILE]: Starting..." + bcolors.ENDC)
+  pass_test_udp_upload_file = udp_upload_file()
+  if not pass_test_udp_upload_file:
+    print(bcolors.RED + "[TEST UDP UPLOAD FILE]: Failed." + bcolors.ENDC)
+  else:
+    print(bcolors.GREEN + "[TEST UDP UPLOAD FILE]: Passed." + bcolors.ENDC)
 
 
 main()
