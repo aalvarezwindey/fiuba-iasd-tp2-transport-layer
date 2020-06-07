@@ -1,4 +1,6 @@
 import hashlib
+from _socket import timeout
+
 from utils import constants
 
 
@@ -144,12 +146,14 @@ class ReceptorDePaquetes:
         if paquete.valido() and (self.ultimo_numero_de_secuencia + 1 == numero_de_secuencia_paquete):
             # Ok
             self.ultimo_numero_de_secuencia += 1
-            ack = Ack(numero_de_secuencia=self.ultimo_numero_de_secuencia.to_bytes(constants.SEQUENCE_NUMBER_SIZE, "big"))
+            ack = Ack(
+                numero_de_secuencia=self.ultimo_numero_de_secuencia.to_bytes(constants.SEQUENCE_NUMBER_SIZE, "big"))
             self.transmisor_de_mensajes.enviar(ack)
             return paquete.contenido
         else:
             # Pedir retransmicion
-            ack = Ack(numero_de_secuencia=self.ultimo_numero_de_secuencia.to_bytes(constants.SEQUENCE_NUMBER_SIZE, "big"))
+            ack = Ack(
+                numero_de_secuencia=self.ultimo_numero_de_secuencia.to_bytes(constants.SEQUENCE_NUMBER_SIZE, "big"))
             self.transmisor_de_mensajes.enviar(ack)
             return self.recibir_paquete()
 
@@ -164,7 +168,8 @@ class ReceptorDePaquetes:
 
 class TransmisorDeContenido:
 
-    def __init__(self, socket, receptor):
+    def __init__(self, socket, receptor=None):
+        self.socket = socket
         self.numero_de_secuencia = 0
         self.transmisor_de_paquetes = Transmisor(socket, receptor)
         self.receptor_de_acks = Receptor(socket, Ack)
@@ -181,9 +186,14 @@ class TransmisorDeContenido:
 
     def enviar_contenido(self, contenido):
         paquete = self._crear_paquete(contenido)
-        self.transmisor_de_paquetes.enviar(paquete)
+        self.socket.settimeout(constants.RTO)
 
-        ack = self.receptor_de_acks.recibir()
+        try:
+            self.transmisor_de_paquetes.enviar(paquete)
+            ack = self.receptor_de_acks.recibir()
+        except timeout:
+            self.enviar_contenido(contenido)
+            return
 
         if not ack.valido() or not int.from_bytes(ack.numero_de_secuencia, "big") == self.numero_de_secuencia:
             self.enviar_contenido(contenido)  # Retransmición
