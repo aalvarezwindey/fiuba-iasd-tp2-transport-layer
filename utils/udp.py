@@ -138,7 +138,7 @@ class Receptor:
         return self.tipo_de_mensaje(contenido=data)
 
 
-class ReceptorDePaquetes:
+class ReceptorDeContenido:
 
     def __init__(self, socket):
         self.receptor_de_paquetes = Receptor(socket, Paquete)

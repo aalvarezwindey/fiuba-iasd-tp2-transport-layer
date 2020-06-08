@@ -39,7 +39,7 @@ def start_server(server_address, storage_dir):
 
         # Creo abstracciones.
         socket_obj = udp.Socket(sock)
-        receptor = udp.ReceptorDePaquetes(socket_obj)
+        receptor = udp.ReceptorDeContenido(socket_obj)
         transmisor = udp.TransmisorDeContenido(socket_obj)
 
         # Manejo SIGINT.
@@ -51,7 +51,10 @@ def start_server(server_address, storage_dir):
 
         # Manejo pedidos de los clientes.
         while True:
+            transmisor.numero_de_secuencia = 0
+            receptor.ultimo_numero_de_secuencia = -1
             select.select([sock], [], [])  # Esperar a que haya algo para recibir.
+
             accion = receptor.recibir_contenido().decode()
             print("Se recibió la acción {}.".format(accion))
 

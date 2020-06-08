@@ -23,7 +23,7 @@ def download_file(server_address, name, dst):
         sock.settimeout(constants.RTO)
 
         socket_obj = udp.Socket(sock, server_address)
-        receptor = udp.ReceptorDePaquetes(socket_obj)
+        receptor = udp.ReceptorDeContenido(socket_obj)
         transmisor = udp.TransmisorDeContenido(socket_obj)
 
         transmisor.enviar_contenido(constants.DOWNLOAD.encode())
