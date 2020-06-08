@@ -47,6 +47,7 @@ def download_file(server_address, name, dst):
   tcp_client_connection.receive_file(file_downloaded, int(file_size_str))
   print('Finish downloading the file')
 
+  tcp_client_connection.close_read()
   tcp_client_connection.destroy()
   return 0
   

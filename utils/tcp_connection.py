@@ -1,4 +1,5 @@
 from abc import ABCMeta
+import socket
 
 MAX_CHUNK_SIZE = 2048
 
@@ -65,6 +66,20 @@ class TCPConnection(metaclass=ABCMeta):
             read += len(chunk)
             self.send(chunk, len(chunk))
 
+    def close_write(self):
+        try:
+            self.sock.shutdown(socket.SHUT_WR)
+        except Exception as e:
+            print('ERROR: could not destroy socket client')
+            print('{}'.format(e))
+
+    def close_read(self):
+        try:
+            self.sock.shutdown(socket.SHUT_RD)
+        except Exception as e:
+            print('ERROR: could not destroy socket client')
+            print('{}'.format(e))
+
     def destroy(self):
         print('Attempting to close socket client {}'.format(self.server_address))
         try:
@@ -75,7 +90,7 @@ class TCPConnection(metaclass=ABCMeta):
         print('Client socket destroyed {}'.format(self.sock))
 
     def describe(self):
-        print('{}'.format(self.address))
+        print('{}'.format(self.server_address))
 
     def send_with_separator(self, data, separator = '|'):
         self.send(data, len(data))

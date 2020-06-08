@@ -43,5 +43,6 @@ def upload_file(server_address, src, name):
   tcp_client_connection.send_file(the_file, file_size)
   print('Finish sending the file')
 
+  tcp_client_connection.close_write()
   tcp_client_connection.destroy()
   return 0

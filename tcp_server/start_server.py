@@ -5,6 +5,8 @@ import signal
 import sys
 import os
 
+import time
+
 COMMAND_LEN = 1
 UPLOAD_CMD = '1'
 DOWNLOAD_CMD = '2'
@@ -26,7 +28,10 @@ def handle_upload(tcp_server_connection, storage_dir):
   file_path = "{}{}".format(storage_dir, file_name)
   print('Start receiving the file at: "{}"'.format(file_path))
   new_file = open(file_path, "wb")
+
   tcp_server_connection.receive_file(new_file, int(file_size_str))
+  tcp_server_connection.close_read()
+  tcp_server_connection.destroy()
   print('Finish receiving the file')
 
 
@@ -55,6 +60,8 @@ def handle_download(tcp_server_connection, storage_dir):
     # 3. Sending the file
     print('Sending the file')
     tcp_server_connection.send_file(file_to_download, file_size)
+    tcp_server_connection.close_write()
+    tcp_server_connection.destroy()
     print('Finish sending the file')
 
 
@@ -80,8 +87,8 @@ def start_server(server_address, storage_dir):
   tcp_server_listener = TCPServerListener(server_address)
 
   def stop_server(sig, frame):
-      tcp_server_listener.destroy()
-      sys.exit(0)
+    tcp_server_listener.destroy()
+    sys.exit(0)
 
   # Register handler for SIGINT (Ctrl + C)
   signal.signal(signal.SIGINT, stop_server)

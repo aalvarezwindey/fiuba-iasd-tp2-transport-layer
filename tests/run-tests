@@ -18,7 +18,7 @@ class bcolors:
 absolute_path_current_dir = os.path.dirname(os.path.abspath(__file__))
 
 tcp_server_dir = "localhost"
-tcp_server_port = "6673"
+tcp_server_port = "6691"
 
 original_example_file_name = "example_file.md"
 original_example_file_absolute_folder = absolute_path_current_dir
@@ -37,6 +37,7 @@ storaged_udp_example_file_absolute_folder = absolute_path_current_dir
 storaged_udp_example_file_absolute_path = storaged_udp_example_file_absolute_folder + "/" + storaged_udp_example_file_name
 
 WAIT_SECS_FOR_SERVER_INITIALIZATION = 1
+WAIT_SECS_BETWEEN_TESTS = 0
 
 # - UTILS MULTIPURPOSE FUNCTIONS ####################################
 
@@ -47,7 +48,7 @@ def tcp_start_server():
                          '-P', tcp_server_port,
                          '-s', storaged_tcp_example_file_absolute_folder,
                          '-p', 'tcp'],
-                         stdout=-1)
+                         stdout=1)
   print('[SERVER] PID of running TCP server: {}'.format(svr_process.pid))
   return svr_process
 
@@ -58,7 +59,7 @@ def udp_start_server():
                          '-P', tcp_server_port,
                          '-s', storaged_udp_example_file_absolute_folder,
                          '-p', 'udp'],
-                         stdout=-1)
+                         stdout=1)
   print('[SERVER] PID of running TCP server: {}'.format(svr_process.pid))
   return svr_process
 
@@ -71,7 +72,7 @@ def tcp_start_upload():
                          '-s', original_example_file_absolute_path,
                          '-n', storaged_tcp_example_file_name,
                          '-p', 'tcp'],
-                         stdout=-1)
+                         stdout=1)
   print('[CLIENT] PID of running TCP client: {}'.format(cli_process.pid))
   return cli_process
 
@@ -84,7 +85,7 @@ def udp_start_upload():
                          '-s', original_example_file_absolute_path,
                          '-n', storaged_udp_example_file_name,
                          '-p', 'udp'],
-                         stdout=-1)
+                         stdout=1)
   print('[CLIENT] PID of running TCP client: {}'.format(cli_process.pid))
   return cli_process
 
@@ -103,10 +104,12 @@ def tcp_start_download():
 
 def stop_server(svr_process):
   svr_process.send_signal(signal.SIGINT)
+  svr_process.wait()
   print("[SERVER] TCP server has been killed.")
 
 def stop_client(cli_process):
   cli_process.send_signal(signal.SIGINT)
+  cli_process.wait()
   print("[CLIENT] TCP client has been killed.")
 
 # - TEST CASES FUNCTIONS ####################################
@@ -249,38 +252,54 @@ def udp_upload_file():
   return True
 
 def main():
+
+  time.sleep(WAIT_SECS_BETWEEN_TESTS)
+
   print(bcolors.GREEN + "[TEST TCP UPLOAD FILE]: Starting..." + bcolors.ENDC)
   pass_test_tcp_upload_file = tcp_upload_file()
   if not pass_test_tcp_upload_file:
     print(bcolors.RED + "[TEST TCP UPLOAD FILE]: Failed." + bcolors.ENDC)
+    return
   else:
     print(bcolors.GREEN + "[TEST TCP UPLOAD FILE]: Passed." + bcolors.ENDC)
+
+  time.sleep(WAIT_SECS_BETWEEN_TESTS)
 
   print(bcolors.GREEN + "[TEST TCP DOWNLOAD FILE]: Starting..." + bcolors.ENDC)
   pass_test_tcp_download_file = tcp_download_file()
   if not pass_test_tcp_download_file:
     print(bcolors.RED + "[TEST TCP DOWNLOAD FILE]: Failed." + bcolors.ENDC)
+    return
   else:
     print(bcolors.GREEN + "[TEST TCP DOWNLOAD FILE]: Passed." + bcolors.ENDC)
+
+  time.sleep(WAIT_SECS_BETWEEN_TESTS)
 
   print(bcolors.GREEN + "[TEST TCP UPLOAD FILE WITH PACKET LOSS]: Starting..." + bcolors.ENDC)
   pass_test_tcp_upload_file_with_packet_loss = test_tcp_upload_file_with_packet_loss()
   if not pass_test_tcp_upload_file_with_packet_loss:
     print(bcolors.RED + "[TEST TCP UPLOAD FILE WITH PACKET LOSS]: Failed." + bcolors.ENDC)
+    return
   else:
     print(bcolors.GREEN + "[TEST TCP UPLOAD FILE WITH PACKET LOSS]: Passed." + bcolors.ENDC)
+
+  time.sleep(WAIT_SECS_BETWEEN_TESTS)
 
   print(bcolors.GREEN + "[TEST TCP DOWNLOAD FILE WITH PACKET LOSS]: Starting..." + bcolors.ENDC)
   pass_test_tcp_download_file_with_packet_loss = test_tcp_download_file_with_packet_loss()
   if not pass_test_tcp_download_file_with_packet_loss:
     print(bcolors.RED + "[TEST TCP DOWNLOAD FILE WITH PACKET LOSS]: Failed." + bcolors.ENDC)
+    return
   else:
     print(bcolors.GREEN + "[TEST TCP DOWNLOAD FILE WITH PACKET LOSS]: Passed." + bcolors.ENDC)
+
+  time.sleep(WAIT_SECS_BETWEEN_TESTS)
 
   print(bcolors.GREEN + "[TEST UDP UPLOAD FILE]: Starting..." + bcolors.ENDC)
   pass_test_udp_upload_file = udp_upload_file()
   if not pass_test_udp_upload_file:
     print(bcolors.RED + "[TEST UDP UPLOAD FILE]: Failed." + bcolors.ENDC)
+    return
   else:
     print(bcolors.GREEN + "[TEST UDP UPLOAD FILE]: Passed." + bcolors.ENDC)
 

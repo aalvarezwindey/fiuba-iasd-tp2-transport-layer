@@ -4,4 +4,4 @@ import socket
 class TCPServerConnection(TCPConnection):
     def __init__(self, sock, address):
         self.sock = sock
-        self.address = address
+        self.server_address = address

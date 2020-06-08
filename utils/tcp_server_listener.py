@@ -10,6 +10,7 @@ class TCPServerListener:
         try:
             MAX_NOT_ACCEPTED_CONNECTIONS_QUEUED = 1
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.sock.bind((server_address))
             self.sock.listen(MAX_NOT_ACCEPTED_CONNECTIONS_QUEUED)
         except Exception as e:
@@ -22,6 +23,7 @@ class TCPServerListener:
     def destroy(self):
         print('Attempting to close socket server {}'.format(self.server_address))
         try:
+            self.sock.shutdown(socket.SHUT_RDWR)
             self.sock.close()
         except Exception as e:
             print('ERROR: could not destroy socket server')
