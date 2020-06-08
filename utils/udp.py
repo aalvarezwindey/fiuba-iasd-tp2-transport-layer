@@ -4,6 +4,13 @@ from _socket import timeout
 from utils import constants
 
 
+class Socket:
+
+    def __init__(self, socket, receptor=None):
+        self.socket = socket
+        self.receptor = receptor
+
+
 class Paquete:
     """
     Modela un paquete de la capa de aplicación. El mismo se compone
@@ -105,15 +112,18 @@ class Ack:
 
 class Transmisor:
 
-    def __init__(self, socket, direccion_del_receptor=None):
+    def __init__(self, socket):
         self.socket = socket
-        self.receptor = direccion_del_receptor
 
     def enviar(self, mensaje):
-        self.socket.sendto(
-            mensaje.contenido_completo(),
-            self.receptor
-        )
+        bytes_enviados = 0
+        contenido = mensaje.contenido_completo()
+
+        while bytes_enviados < len(contenido):
+            bytes_enviados += self.socket.socket.sendto(
+                contenido[bytes_enviados:],
+                self.socket.receptor
+            )
 
 
 class Receptor:
@@ -121,26 +131,26 @@ class Receptor:
     def __init__(self, socket, tipo_de_mensaje):
         self.socket = socket
         self.tipo_de_mensaje = tipo_de_mensaje
-        self.transmisor = None
 
     def recibir(self):
-        data, addr = self.socket.recvfrom(constants.CHUNK_SIZE)
-        self.transmisor = addr
+        data, addr = self.socket.socket.recvfrom(constants.CHUNK_SIZE)
+        self.socket.receptor = addr
         return self.tipo_de_mensaje(contenido=data)
 
 
 class ReceptorDePaquetes:
 
     def __init__(self, socket):
-        self.socket = socket
         self.receptor_de_paquetes = Receptor(socket, Paquete)
         self.transmisor_de_mensajes = Transmisor(socket)
         self.ultimo_numero_de_secuencia = -1
 
-    def recibir_paquete(self):
-        paquete = self.receptor_de_paquetes.recibir()
-        transmisor = self.receptor_de_paquetes.transmisor
-        self.transmisor_de_mensajes.receptor = transmisor
+    def recibir_contenido(self):
+        try:
+            paquete = self.receptor_de_paquetes.recibir()
+        except timeout:  # Se perdió por RTO.
+            print("RTO al recibir contenido")
+            return self.recibir_contenido()
 
         numero_de_secuencia_paquete = int.from_bytes(paquete.numero_de_secuencia, "big")
         if paquete.valido() and (self.ultimo_numero_de_secuencia + 1 == numero_de_secuencia_paquete):
@@ -155,23 +165,24 @@ class ReceptorDePaquetes:
             ack = Ack(
                 numero_de_secuencia=self.ultimo_numero_de_secuencia.to_bytes(constants.SEQUENCE_NUMBER_SIZE, "big"))
             self.transmisor_de_mensajes.enviar(ack)
-            return self.recibir_paquete()
+            return self.recibir_contenido()
 
     def recibir_archivo(self, archivo, file_size):
         bytes_received = 0
 
         while bytes_received < file_size:
-            data = self.recibir_paquete()
+            print("Bytes recibidos:", bytes_received)
+            data = self.recibir_contenido()
             bytes_received += len(data)
             archivo.write(data)
 
 
 class TransmisorDeContenido:
 
-    def __init__(self, socket, receptor=None):
+    def __init__(self, socket):
         self.socket = socket
         self.numero_de_secuencia = 0
-        self.transmisor_de_paquetes = Transmisor(socket, receptor)
+        self.transmisor_de_paquetes = Transmisor(socket)
         self.receptor_de_acks = Receptor(socket, Ack)
 
     def _crear_paquete(self, contenido):
@@ -186,12 +197,12 @@ class TransmisorDeContenido:
 
     def enviar_contenido(self, contenido):
         paquete = self._crear_paquete(contenido)
-        self.socket.settimeout(constants.RTO)
 
+        self.transmisor_de_paquetes.enviar(paquete)
         try:
-            self.transmisor_de_paquetes.enviar(paquete)
             ack = self.receptor_de_acks.recibir()
-        except timeout:
+        except timeout:  # Retransmisión por RTO.
+            print("RTO al esperar ack")
             self.enviar_contenido(contenido)
             return
 
@@ -201,8 +212,11 @@ class TransmisorDeContenido:
             self.numero_de_secuencia += 1  # Ok
 
     def enviar_archivo(self, archivo):
+        bytes_enviados = 0
         while True:
             chunk = archivo.read(constants.PAYLOAD_SIZE)
+            bytes_enviados += len(chunk)
+            print("Bytes enviados:", bytes_enviados)
             if not chunk:
                 break
             self.enviar_contenido(chunk)

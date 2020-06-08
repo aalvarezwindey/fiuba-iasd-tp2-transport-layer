@@ -1,4 +1,5 @@
 import os
+import select
 import socket
 import signal
 import sys
@@ -32,18 +33,26 @@ def start_server(server_address, storage_dir):
     print('UDP: start_server({}, {})'.format(server_address, storage_dir))
 
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+        # Configuro Sockets.
         sock.bind(server_address)
-        receptor = udp.ReceptorDePaquetes(sock)
-        transmisor = udp.TransmisorDeContenido(sock)
+        sock.settimeout(constants.RTO)
 
+        # Creo abstracciones.
+        socket_obj = udp.Socket(sock)
+        receptor = udp.ReceptorDePaquetes(socket_obj)
+        transmisor = udp.TransmisorDeContenido(socket_obj)
+
+        # Manejo SIGINT.
         def stop_server(sig, frame):
             destroy(sock, server_address)
             sys.exit(0)
 
         signal.signal(signal.SIGINT, stop_server)
 
+        # Manejo pedidos de los clientes.
         while True:
-            accion = receptor.recibir_paquete().decode()
+            select.select([sock], [], [])  # Esperar a que haya algo para recibir.
+            accion = receptor.recibir_contenido().decode()
             print("Se recibió la acción {}.".format(accion))
 
             if accion == constants.UPLOAD:
@@ -64,13 +73,14 @@ def handle_upload(storage_dir, receptor):
     :param receptor:
     :return:
     """
-    file_name = receptor.recibir_paquete().decode()
-    file_size = int(receptor.recibir_paquete().decode())
+    file_name = receptor.recibir_contenido().decode()
+    file_size = int(receptor.recibir_contenido().decode())
     print("Se pidió subir el archivo {} con longitud {}.".format(file_name, file_size))
 
     filename = path.join(storage_dir, file_name)
     with open(filename, "wb") as f:
         receptor.recibir_archivo(f, file_size)
+
     print("Archivo recibido.")
 
 
@@ -85,8 +95,7 @@ def handle_download(storage_dir, receptor, transmisor):
     :param transmisor:
     :return:
     """
-    transmisor.transmisor_de_paquetes.receptor = receptor.receptor_de_paquetes.transmisor
-    file_name = receptor.recibir_paquete().decode()
+    file_name = receptor.recibir_contenido().decode()
     print("Se pidió descargar el archivo {}.".format(file_name))
 
     filename = path.join(storage_dir, file_name)
@@ -97,4 +106,5 @@ def handle_download(storage_dir, receptor, transmisor):
 
         transmisor.enviar_contenido(str(size).encode())
         transmisor.enviar_archivo(f)
+
     print("Archivo transmitido.")

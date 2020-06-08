@@ -21,9 +21,13 @@ def upload_file(server_address, src, name):
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         own_address = ('127.0.0.1', 0)
         sock.bind(own_address)
+        sock.settimeout(constants.RTO)
 
-        transmisor = udp.TransmisorDeContenido(sock, server_address)
+        socket_obj = udp.Socket(sock, server_address)
+        transmisor = udp.TransmisorDeContenido(socket_obj)
+
         transmisor.enviar_contenido(constants.UPLOAD.encode())
+        print("Upload enviado")
         transmisor.enviar_contenido(name.encode())
 
         with open(src, "rb") as f:
@@ -32,3 +36,5 @@ def upload_file(server_address, src, name):
             f.seek(0, os.SEEK_SET)
             transmisor.enviar_contenido(str(size).encode())
             transmisor.enviar_archivo(f)
+
+        print("Archivo enviado")

@@ -20,13 +20,17 @@ def download_file(server_address, name, dst):
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         own_address = ('127.0.0.1', 0)
         sock.bind(own_address)
+        sock.settimeout(constants.RTO)
 
-        receptor = udp.ReceptorDePaquetes(sock)
-        transmisor = udp.TransmisorDeContenido(sock, server_address)
+        socket_obj = udp.Socket(sock, server_address)
+        receptor = udp.ReceptorDePaquetes(socket_obj)
+        transmisor = udp.TransmisorDeContenido(socket_obj)
 
         transmisor.enviar_contenido(constants.DOWNLOAD.encode())
         transmisor.enviar_contenido(name.encode())
-        file_size = int(receptor.recibir_paquete().decode())
+        file_size = int(receptor.recibir_contenido().decode())
 
         with open(dst, "wb") as f:
             receptor.recibir_archivo(f, file_size)
+
+        print("Archivo recibido")
