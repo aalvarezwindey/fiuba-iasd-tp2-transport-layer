@@ -144,13 +144,18 @@ class ReceptorDeContenido:
         self.receptor_de_paquetes = Receptor(socket, Paquete)
         self.transmisor_de_mensajes = Transmisor(socket)
         self.ultimo_numero_de_secuencia = -1
+        self.cantidad_de_perdidas_seguidas = 0
 
     def recibir_contenido(self):
         try:
             paquete = self.receptor_de_paquetes.recibir()
         except timeout:  # Se perdió por RTO.
             print("RTO al recibir contenido")
+            self.cantidad_de_perdidas_seguidas += 1
+            if self.cantidad_de_perdidas_seguidas >= constants.RTOS_TO_DISCONNECT:
+                raise Desconexion
             return self.recibir_contenido()
+        self.cantidad_de_perdidas_seguidas = 0
 
         numero_de_secuencia_paquete = int.from_bytes(paquete.numero_de_secuencia, "big")
         if paquete.valido() and (self.ultimo_numero_de_secuencia + 1 == numero_de_secuencia_paquete):
@@ -184,6 +189,7 @@ class TransmisorDeContenido:
         self.numero_de_secuencia = 0
         self.transmisor_de_paquetes = Transmisor(socket)
         self.receptor_de_acks = Receptor(socket, Ack)
+        self.cantidad_de_perdidas_seguidas = 0
 
     def _crear_paquete(self, contenido):
         if len(contenido) > constants.PAYLOAD_SIZE:
@@ -203,8 +209,12 @@ class TransmisorDeContenido:
             ack = self.receptor_de_acks.recibir()
         except timeout:  # Retransmisión por RTO.
             print("RTO al esperar ack")
+            self.cantidad_de_perdidas_seguidas += 1
+            if self.cantidad_de_perdidas_seguidas >= constants.RTOS_TO_DISCONNECT:
+                raise Desconexion
             self.enviar_contenido(contenido)
             return
+        self.cantidad_de_perdidas_seguidas = 0
 
         if not ack.valido() or not int.from_bytes(ack.numero_de_secuencia, "big") == self.numero_de_secuencia:
             self.enviar_contenido(contenido)  # Retransmición
@@ -220,3 +230,6 @@ class TransmisorDeContenido:
             if not chunk:
                 break
             self.enviar_contenido(chunk)
+
+class Desconexion(Exception):
+    pass

@@ -26,11 +26,14 @@ def download_file(server_address, name, dst):
         receptor = udp.ReceptorDeContenido(socket_obj)
         transmisor = udp.TransmisorDeContenido(socket_obj)
 
-        transmisor.enviar_contenido(constants.DOWNLOAD.encode())
-        transmisor.enviar_contenido(name.encode())
-        file_size = int(receptor.recibir_contenido().decode())
+        try:
+            transmisor.enviar_contenido(constants.DOWNLOAD.encode())
+            transmisor.enviar_contenido(name.encode())
+            file_size = int(receptor.recibir_contenido().decode())
 
-        with open(dst, "wb") as f:
-            receptor.recibir_archivo(f, file_size)
+            with open(dst, "wb") as f:
+                receptor.recibir_archivo(f, file_size)
+            print("Archivo recibido")
 
-        print("Archivo recibido")
+        except udp.Desconexion:
+            print("Se desconectó el servidor")

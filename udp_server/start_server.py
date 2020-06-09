@@ -55,15 +55,18 @@ def start_server(server_address, storage_dir):
             receptor.ultimo_numero_de_secuencia = -1
             select.select([sock], [], [])  # Esperar a que haya algo para recibir.
 
-            accion = receptor.recibir_contenido().decode()
-            print("Se recibió la acción {}.".format(accion))
+            try:
+                accion = receptor.recibir_contenido().decode()
+                print("Se recibió la acción {}.".format(accion))
 
-            if accion == constants.UPLOAD:
-                handle_upload(storage_dir, receptor)
-            elif accion == constants.DOWNLOAD:
-                handle_download(storage_dir, receptor, transmisor)
-            else:
-                print("Acción desconocida {}.".format(accion))
+                if accion == constants.UPLOAD:
+                    handle_upload(storage_dir, receptor)
+                elif accion == constants.DOWNLOAD:
+                    handle_download(storage_dir, receptor, transmisor)
+                else:
+                    print("Acción desconocida {}.".format(accion))
+            except udp.Desconexion:
+                print("Se desconectó el cliente")
 
 
 def handle_upload(storage_dir, receptor):
