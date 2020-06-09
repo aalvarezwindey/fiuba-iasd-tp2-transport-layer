@@ -18,7 +18,7 @@ class bcolors:
 absolute_path_current_dir = os.path.dirname(os.path.abspath(__file__))
 
 tcp_server_dir = "localhost"
-tcp_server_port = "6691"
+tcp_server_port = "6693"
 
 original_example_file_name = "example_file.md"
 original_example_file_absolute_folder = absolute_path_current_dir
@@ -35,6 +35,10 @@ downloaded_tcp_example_file_absolute_path = downloaded_tcp_example_file_absolute
 storaged_udp_example_file_name = "storaged_udp_example_file.md"
 storaged_udp_example_file_absolute_folder = absolute_path_current_dir
 storaged_udp_example_file_absolute_path = storaged_udp_example_file_absolute_folder + "/" + storaged_udp_example_file_name
+
+downloaded_udp_example_file_name = "downloaded_udp_example_file.md"
+downloaded_udp_example_file_absolute_folder = absolute_path_current_dir
+downloaded_udp_example_file_absolute_path = downloaded_udp_example_file_absolute_folder + "/" + downloaded_udp_example_file_name
 
 WAIT_SECS_FOR_SERVER_INITIALIZATION = 1
 WAIT_SECS_BETWEEN_TESTS = 0
@@ -96,9 +100,22 @@ def tcp_start_download():
   cli_process = subprocess.Popen(args=[absolute_path_current_dir + '/../download-file',
                          '-H', tcp_server_dir,
                          '-P', tcp_server_port,
-                         '-n', storaged_tcp_example_file_name,
+                         '-n', original_example_file_name,
                          '-d', downloaded_tcp_example_file_absolute_path,
                          '-p', 'tcp'],
+                         stdout=STDOUT_VAL)
+  print('[CLIENT] PID of running TCP client: {}'.format(cli_process.pid))
+  return cli_process
+
+def udp_start_download():
+  print('[CLIENT] Absolute path of the downloaded file destiny: "{}"'.format(downloaded_udp_example_file_absolute_folder))
+  print('[CLIENT] Name of the file after been downloaded: "{}'.format(downloaded_udp_example_file_name))
+  cli_process = subprocess.Popen(args=[absolute_path_current_dir + '/../download-file',
+                         '-H', tcp_server_dir,
+                         '-P', tcp_server_port,
+                         '-n', original_example_file_name,
+                         '-d', downloaded_udp_example_file_absolute_path,
+                         '-p', 'udp'],
                          stdout=STDOUT_VAL)
   print('[CLIENT] PID of running TCP client: {}'.format(cli_process.pid))
   return cli_process
@@ -168,7 +185,7 @@ def tcp_download_file():
     stop_client(cli_process)
     return False
   
-  files_are_equal = filecmp.cmp(storaged_tcp_example_file_absolute_path,
+  files_are_equal = filecmp.cmp(original_example_file_absolute_path,
                                 downloaded_tcp_example_file_absolute_path,
                                 shallow=False)
   
@@ -252,10 +269,52 @@ def udp_upload_file():
 
   return True
 
+def udp_download_file():
+  svr_process = udp_start_server()
+  # Prudential time for server setup
+  time.sleep(WAIT_SECS_FOR_SERVER_INITIALIZATION)
+
+  cli_process = udp_start_download()
+
+  print('[TEST] Waiting for the client to finish downloading the file...')
+  cli_process.wait()
+
+  if (cli_process.returncode == 0):
+    print("[TEST] File has been fully transferred.")
+  else:
+    print(bcolors.RED + "[TEST] Client error receiving file." + bcolors.ENDC)
+    stop_server(svr_process)
+    stop_client(cli_process)
+    return False
+  
+  files_are_equal = filecmp.cmp(original_example_file_absolute_path,
+                                downloaded_udp_example_file_absolute_path,
+                                shallow=False)
+  
+  if not files_are_equal:
+    print(bcolors.RED + "[TEST] Original and downloaded files are not equal." + bcolors.ENDC)
+    stop_server(svr_process)
+    stop_client(cli_process)
+    return False
+  else:
+    print("[TEST] Original and downloaded files are equal.")
+    
+  stop_server(svr_process)
+  stop_client(cli_process)
+
+  return True
+
 def main():
 
   #while True:
-    
+
+    print(bcolors.GREEN + "[TEST TCP UPLOAD FILE]: Starting..." + bcolors.ENDC)
+    pass_test_tcp_upload_file = tcp_upload_file()
+    if not pass_test_tcp_upload_file:
+      print(bcolors.RED + "[TEST TCP UPLOAD FILE]: Failed." + bcolors.ENDC)
+      return
+    else:
+      print(bcolors.GREEN + "[TEST TCP UPLOAD FILE]: Passed." + bcolors.ENDC)
 
     time.sleep(WAIT_SECS_BETWEEN_TESTS)
 
@@ -299,13 +358,16 @@ def main():
 
     time.sleep(WAIT_SECS_BETWEEN_TESTS)
 
-    print(bcolors.GREEN + "[TEST TCP UPLOAD FILE]: Starting..." + bcolors.ENDC)
-    pass_test_tcp_upload_file = tcp_upload_file()
-    if not pass_test_tcp_upload_file:
-      print(bcolors.RED + "[TEST TCP UPLOAD FILE]: Failed." + bcolors.ENDC)
+    print(bcolors.GREEN + "[TEST UDP DOWNLOAD FILE]: Starting..." + bcolors.ENDC)
+    pass_test_udp_download_file = udp_download_file()
+    if not pass_test_udp_download_file:
+      print(bcolors.RED + "[TEST UDP DOWNLOAD FILE]: Failed." + bcolors.ENDC)
       return
     else:
-      print(bcolors.GREEN + "[TEST TCP UPLOAD FILE]: Passed." + bcolors.ENDC)
+      print(bcolors.GREEN + "[TEST UDP DOWNLOAD FILE]: Passed." + bcolors.ENDC)
+
+    time.sleep(WAIT_SECS_BETWEEN_TESTS)
+
 
 
 main()
