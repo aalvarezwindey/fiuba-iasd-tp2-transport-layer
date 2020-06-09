@@ -78,8 +78,19 @@ def handle_download(tcp_server_connection, storage_dir):
     print('Sending the file')
     tcp_server_connection.send_file(file_to_download, file_size)
     tcp_server_connection.close_write()
-    tcp_server_connection.destroy()
     print('Finish sending the file')
+
+    # 4. Waiting server finish processing
+    print('Waiting client finish downloading')
+    client_response = tcp_server_connection.receive_until_separator()
+    print('Client response: {}'.format(client_response))
+    if (not client_response == OK_RESPONSE):
+      tcp_server_connection.close_read()
+      raise ValueError('Client {} fail downloading'.format(tcp_server_connection.describe()))
+
+    tcp_server_connection.close_read()
+    tcp_server_connection.destroy()
+
 
 
 

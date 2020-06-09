@@ -3,12 +3,14 @@ import os
 
 DOWNLOAD_CMD = '2'
 ERROR_FILE_DOES_NOT_EXIST = '-1'
+OK_RESPONSE = 'ok'
+ERROR_RESPONSE = 'fail'
 
 def download_file(server_address, name, dst):
   print('TCP: download_file({}, {}, {})'.format(server_address, name, dst))
 
   try:
-    file_downloaded = open(dst, "wb", buffering=0)
+    file_downloaded = open(dst, "wb")
   except Exception as e:
     print('ERROR: could not download file on "{}"'.format(dst))
     print('{}'.format(e))
@@ -45,9 +47,24 @@ def download_file(server_address, name, dst):
   # 3. Downloading the file
   print('Start downloading the file')
   tcp_client_connection.receive_file(file_downloaded, int(file_size_str))
+  file_downloaded.close()
+  tcp_client_connection.close_read()
   print('Finish downloading the file')
 
-  tcp_client_connection.close_read()
+  # 4. Telling the server that everything is OK
+  # Check the stored file is of the same size as expected
+  with open(dst, "rb") as the_file:
+    the_file.seek(0, os.SEEK_END)
+    file_size = the_file.tell()
+    the_file.seek(0, os.SEEK_SET)
+
+    if not file_size == int(file_size_str):
+      tcp_client_connection.send_with_separator(ERROR_RESPONSE.encode())
+      tcp_client_connection.close_write()
+      raise ValueError('File stored is of {} bytes and it is expected to be of {} bytes'.format(file_size, file_size_str))
+
+  tcp_client_connection.send_with_separator(OK_RESPONSE.encode())
+  tcp_client_connection.close_write()
   tcp_client_connection.destroy()
   return 0
   
