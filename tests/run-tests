@@ -153,6 +153,8 @@ def tcp_upload_file():
   files_are_equal = filecmp.cmp(original_example_file_absolute_path,
                                 storaged_tcp_example_file_absolute_path,
                                 shallow=False)
+
+  os.remove(storaged_tcp_example_file_absolute_path)
   
   if not files_are_equal:
     print(bcolors.RED + "[TEST] Original and transferred files are not equal." + bcolors.ENDC)
@@ -189,6 +191,8 @@ def tcp_download_file():
                                 downloaded_tcp_example_file_absolute_path,
                                 shallow=False)
   
+  os.remove(downloaded_tcp_example_file_absolute_path)
+
   if not files_are_equal:
     print(bcolors.RED + "[TEST] Original and downloaded files are not equal." + bcolors.ENDC)
     stop_server(svr_process)
@@ -255,6 +259,8 @@ def udp_upload_file():
   files_are_equal = filecmp.cmp(original_example_file_absolute_path,
                                 storaged_udp_example_file_absolute_path,
                                 shallow=False)
+
+  os.remove(storaged_udp_example_file_absolute_path)
   
   if not files_are_equal:
     print(bcolors.RED + "[TEST] Original and transferred files are not equal." + bcolors.ENDC)
@@ -291,6 +297,8 @@ def udp_download_file():
                                 downloaded_udp_example_file_absolute_path,
                                 shallow=False)
   
+  os.remove(downloaded_udp_example_file_absolute_path)
+
   if not files_are_equal:
     print(bcolors.RED + "[TEST] Original and downloaded files are not equal." + bcolors.ENDC)
     stop_server(svr_process)
