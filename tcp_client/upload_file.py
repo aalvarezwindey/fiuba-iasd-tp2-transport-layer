@@ -2,6 +2,8 @@ from utils.tcp_client_connection import TCPClientConnection
 import os
 
 UPLOAD_CMD = '1'
+OK_RESPONSE = 'ok'
+ERROR_RESPONSE = 'fail'
 
 def upload_file(server_address, src, name):
   print('TCP: upload_file({}, {}, {})'.format(server_address, src, name))
@@ -42,7 +44,17 @@ def upload_file(server_address, src, name):
   print('Sending the file')
   tcp_client_connection.send_file(the_file, file_size)
   print('Finish sending the file')
-
   tcp_client_connection.close_write()
+
+  # 4. Waiting server finish processing
+  print('Waiting server')
+  sv_response = tcp_client_connection.receive_until_separator()
+  print('Server response: {}'.format(sv_response))
+
+  tcp_client_connection.close_read()
   tcp_client_connection.destroy()
+
+  if (not sv_response == OK_RESPONSE):
+    return -1
+
   return 0

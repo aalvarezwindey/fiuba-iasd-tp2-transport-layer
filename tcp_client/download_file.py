@@ -8,7 +8,7 @@ def download_file(server_address, name, dst):
   print('TCP: download_file({}, {}, {})'.format(server_address, name, dst))
 
   try:
-    file_downloaded = open(dst, "wb")
+    file_downloaded = open(dst, "wb", buffering=0)
   except Exception as e:
     print('ERROR: could not download file on "{}"'.format(dst))
     print('{}'.format(e))

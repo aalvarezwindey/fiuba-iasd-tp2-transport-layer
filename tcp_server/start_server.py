@@ -12,6 +12,8 @@ UPLOAD_CMD = '1'
 DOWNLOAD_CMD = '2'
 
 ERROR_FILE_DOES_NOT_EXIST = '-1'
+OK_RESPONSE = 'ok'
+ERROR_RESPONSE = 'fail'
 
 def handle_upload(tcp_server_connection, storage_dir):
   print('Handling upload command')
@@ -27,12 +29,27 @@ def handle_upload(tcp_server_connection, storage_dir):
   # 3. Receive the file
   file_path = "{}{}".format(storage_dir, file_name)
   print('Start receiving the file at: "{}"'.format(file_path))
-  new_file = open(file_path, "wb")
 
-  tcp_server_connection.receive_file(new_file, int(file_size_str))
-  tcp_server_connection.close_read()
-  tcp_server_connection.destroy()
+  with open(file_path, "wb") as new_file:
+    tcp_server_connection.receive_file(new_file, int(file_size_str))
+    tcp_server_connection.close_read()
+    
   print('Finish receiving the file')
+  # 4. Telling the client that everything is OK
+  # Check the stored file is of the same size
+  with open(file_path, "rb") as the_file:
+    the_file.seek(0, os.SEEK_END)
+    file_size = the_file.tell()
+    the_file.seek(0, os.SEEK_SET)
+
+    if not file_size == int(file_size_str):
+      tcp_server_connection.send_with_separator(ERROR_RESPONSE.encode())
+      tcp_server_connection.close_write()
+      raise ValueError('File stored is of {} bytes and it is expected to be of {} bytes'.format(file_size, file_size_str))
+
+  tcp_server_connection.send_with_separator(OK_RESPONSE.encode())
+  tcp_server_connection.close_write()
+  tcp_server_connection.destroy()
 
 
 def handle_download(tcp_server_connection, storage_dir):
