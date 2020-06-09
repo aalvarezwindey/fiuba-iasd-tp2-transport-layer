@@ -51,8 +51,8 @@ def start_server(server_address, storage_dir):
 
         # Manejo pedidos de los clientes.
         while True:
-            transmisor.numero_de_secuencia = 0
-            receptor.ultimo_numero_de_secuencia = -1
+            transmisor.numero_de_secuencia = 1
+            receptor.ultimo_numero_de_secuencia = 0
             select.select([sock], [], [])  # Esperar a que haya algo para recibir.
 
             try:

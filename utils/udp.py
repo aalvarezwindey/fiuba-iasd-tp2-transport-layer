@@ -143,7 +143,7 @@ class ReceptorDeContenido:
     def __init__(self, socket):
         self.receptor_de_paquetes = Receptor(socket, Paquete)
         self.transmisor_de_mensajes = Transmisor(socket)
-        self.ultimo_numero_de_secuencia = -1
+        self.ultimo_numero_de_secuencia = 0
         self.cantidad_de_perdidas_seguidas = 0
 
     def recibir_contenido(self):
@@ -186,7 +186,7 @@ class TransmisorDeContenido:
 
     def __init__(self, socket):
         self.socket = socket
-        self.numero_de_secuencia = 0
+        self.numero_de_secuencia = 1
         self.transmisor_de_paquetes = Transmisor(socket)
         self.receptor_de_acks = Receptor(socket, Ack)
         self.cantidad_de_perdidas_seguidas = 0
