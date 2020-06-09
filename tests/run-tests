@@ -18,7 +18,7 @@ class bcolors:
 absolute_path_current_dir = os.path.dirname(os.path.abspath(__file__))
 
 tcp_server_dir = "localhost"
-tcp_server_port = "6693"
+tcp_server_port = "6697"
 
 original_example_file_name = "example_file.md"
 original_example_file_absolute_folder = absolute_path_current_dir
@@ -238,6 +238,50 @@ def test_tcp_upload_file_with_packet_loss():
   print('comcast stop return code: {}'.format(comcast.returncode))
   return result
 
+def tcp_integration_test():
+  svr_process = tcp_start_server()
+  # Prudential time for server setup
+  time.sleep(WAIT_SECS_FOR_SERVER_INITIALIZATION)
+
+  # A client upload a file
+
+  cli_process = tcp_start_upload()
+  cli_process.wait()
+
+  # A client download the file
+
+  cli_process = subprocess.Popen(args=[absolute_path_current_dir + '/../download-file',
+                        '-H', tcp_server_dir,
+                        '-P', tcp_server_port,
+                        '-n', storaged_tcp_example_file_name,
+                        '-d', downloaded_tcp_example_file_absolute_path,
+                        '-p', 'tcp'],
+                        stdout=STDOUT_VAL)
+
+  cli_process.wait()
+
+  # Then we compare the files
+
+  files_are_equal = filecmp.cmp(storaged_tcp_example_file_absolute_path,
+                                downloaded_tcp_example_file_absolute_path,
+                                shallow=False)
+
+  os.remove(downloaded_tcp_example_file_absolute_path)
+  os.remove(storaged_tcp_example_file_absolute_path)
+
+  if not files_are_equal:
+    print(bcolors.RED + "[TEST] Original and transferred files are not equal." + bcolors.ENDC)
+    stop_server(svr_process)
+    stop_client(cli_process)
+    return False
+  else:
+    print("[TEST] Original and transferred files are equal.")
+    
+  stop_server(svr_process)
+  stop_client(cli_process)
+
+  return True
+
 def udp_upload_file():
   svr_process = udp_start_server()
   # Prudential time for server setup
@@ -344,9 +388,55 @@ def test_udp_download_file_with_packet_loss():
   print('comcast stop return code: {}'.format(comcast.returncode))
   return result
 
+def udp_integration_test():
+  svr_process = udp_start_server()
+  # Prudential time for server setup
+  time.sleep(WAIT_SECS_FOR_SERVER_INITIALIZATION)
+
+  # A client upload a file
+
+  cli_process = udp_start_upload()
+  cli_process.wait()
+
+  # A client download the file
+
+  cli_process = subprocess.Popen(args=[absolute_path_current_dir + '/../download-file',
+                        '-H', tcp_server_dir,
+                        '-P', tcp_server_port,
+                        '-n', storaged_udp_example_file_name,
+                        '-d', downloaded_udp_example_file_absolute_path,
+                        '-p', 'udp'],
+                        stdout=STDOUT_VAL)
+
+  cli_process.wait()
+
+  # Then we compare the files
+
+  files_are_equal = filecmp.cmp(storaged_udp_example_file_absolute_path,
+                                downloaded_udp_example_file_absolute_path,
+                                shallow=False)
+
+  os.remove(storaged_udp_example_file_absolute_path)
+  os.remove(downloaded_udp_example_file_absolute_path)
+
+  if not files_are_equal:
+    print(bcolors.RED + "[TEST] Original and transferred files are not equal." + bcolors.ENDC)
+    stop_server(svr_process)
+    stop_client(cli_process)
+    return False
+  else:
+    print("[TEST] Original and transferred files are equal.")
+    
+  stop_server(svr_process)
+  stop_client(cli_process)
+
+  return True
+
 def main():
 
   #while True:
+
+    print(bcolors.GREEN + "[TCP SINGLE OPERATION TESTING]: Starting..." + bcolors.ENDC)
 
     print(bcolors.GREEN + "[TEST TCP UPLOAD FILE]: Starting..." + bcolors.ENDC)
     pass_test_tcp_upload_file = tcp_upload_file()
@@ -386,7 +476,11 @@ def main():
     else:
       print(bcolors.GREEN + "[TEST TCP DOWNLOAD FILE WITH PACKET LOSS]: Passed." + bcolors.ENDC)
 
+    print(bcolors.GREEN + "[TCP SINGLE OPERATION TESTING]: Finished." + bcolors.ENDC)
+
     time.sleep(WAIT_SECS_BETWEEN_TESTS)
+
+    print(bcolors.GREEN + "[UDP SINGLE OPERATION TESTING]: Starting..." + bcolors.ENDC)
 
     print(bcolors.GREEN + "[TEST UDP UPLOAD FILE]: Starting..." + bcolors.ENDC)
     pass_test_udp_upload_file = udp_upload_file()
@@ -426,7 +520,28 @@ def main():
     else:
       print(bcolors.GREEN + "[TEST UDP DOWNLOAD FILE WITH PACKET LOSS]: Passed." + bcolors.ENDC)
 
+    print(bcolors.GREEN + "[UDP SINGLE OPERATION TESTING]: Finished." + bcolors.ENDC)
+
     time.sleep(WAIT_SECS_BETWEEN_TESTS)
 
+    print(bcolors.GREEN + "[TCP INTEGRATION TESTING]: Starting..." + bcolors.ENDC)
+
+    pass_tcp_integration_test = tcp_integration_test()
+    if not pass_tcp_integration_test:
+      print(bcolors.RED + "[TCP INTEGRATION TEST]: Failed." + bcolors.ENDC)
+      return
+    else:
+      print(bcolors.GREEN + "[TCP INTEGRATION TEST]: Passed." + bcolors.ENDC)
+
+    time.sleep(WAIT_SECS_BETWEEN_TESTS)
+
+    print(bcolors.GREEN + "[UDP INTEGRATION TESTING]: Starting..." + bcolors.ENDC)
+
+    pass_udp_integration_test = udp_integration_test()
+    if not pass_udp_integration_test:
+      print(bcolors.RED + "[UDP INTEGRATION TEST]: Failed." + bcolors.ENDC)
+      return
+    else:
+      print(bcolors.GREEN + "[UDP INTEGRATION TEST]: Passed." + bcolors.ENDC)
 
 main()
