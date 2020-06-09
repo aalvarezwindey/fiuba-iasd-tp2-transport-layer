@@ -304,6 +304,22 @@ def udp_download_file():
 
   return True
 
+def test_udp_upload_file_with_packet_loss():
+  comcast = subprocess.Popen('comcast --device=lo --packet-loss=15%', shell=True, stdout=subprocess.PIPE)
+  comcast.wait()
+  print('comcast start return code: {}'.format(comcast.returncode))
+
+  if comcast.returncode != 0:
+    print(bcolors.YELLOW + "[TEST UDP UPLOAD FILE WITH PACKET LOSS]: could not run comcast be sure to install it." + bcolors.ENDC)
+    return True
+
+  result = udp_upload_file()
+
+  comcast = subprocess.Popen('comcast --stop --device=lo', shell=True, stdout=subprocess.PIPE)
+  comcast.wait()
+  print('comcast stop return code: {}'.format(comcast.returncode))
+  return result
+
 def main():
 
   #while True:
@@ -368,6 +384,15 @@ def main():
 
     time.sleep(WAIT_SECS_BETWEEN_TESTS)
 
+    print(bcolors.GREEN + "[TEST UDP UPLOAD FILE WITH PACKET LOSS]: Starting..." + bcolors.ENDC)
+    pass_test_udp_upload_file_with_packet_loss = test_udp_upload_file_with_packet_loss()
+    if not pass_test_udp_upload_file_with_packet_loss:
+      print(bcolors.RED + "[TEST UDP UPLOAD FILE WITH PACKET LOSS]: Failed." + bcolors.ENDC)
+      return
+    else:
+      print(bcolors.GREEN + "[TEST UDP UPLOAD FILE WITH PACKET LOSS]: Passed." + bcolors.ENDC)
+
+    time.sleep(WAIT_SECS_BETWEEN_TESTS)
 
 
 main()
